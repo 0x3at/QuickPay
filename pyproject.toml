@@ -1,0 +1,13 @@
+[project]
+name = "quickpay"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "authorizenet>=1.1.5",
+    "django>=5.1.7",
+    "django-debug-toolbar>=5.0.1",
+    "python-dotenv>=1.0.1",
+    "rich>=13.9.4",
+]
