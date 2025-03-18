@@ -88,7 +88,7 @@ class Transaction(models.Model):
             "error": str(self.error),
             "errorText": str(self.errorText),
         }
-        print(result)   
+        print(result)
         return result
 
     @staticmethod
