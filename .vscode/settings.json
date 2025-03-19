@@ -1,3 +1,4 @@
 {
-    "docwriter.style": "NumPy"
+    "docwriter.style": "NumPy",
+    "python.REPL.enableREPLSmartSend": false
 }
