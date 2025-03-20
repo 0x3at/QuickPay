@@ -5,9 +5,10 @@ import json
 from .models import Transaction
 from rich import print
 
+
 def portal(request):
     print(f"Request Captured: {request}")
-    return render(request, 'index.html')
+    return render(request, "index.html")
 
 
 @csrf_exempt  # Consider using proper CSRF protection in production
@@ -21,8 +22,11 @@ def process(request):
             expiration = payload.get("expiration")
             cvv = payload.get("cvv")
             salesperson = payload.get("salesperson")
-            response = Transaction.processTransaction(
-                amount, number, expiration, cvv, salesperson
+            response = Transaction.process(
+                processor="A",
+                amount=float(amount),
+                salesperson=salesperson,
+                cardDetails={"number": number, "expiration": expiration, "cvv": cvv},
             )
             print(f"Response: {response}")
             return JsonResponse(response)
@@ -36,7 +40,8 @@ def process(request):
 
     # For GET requests, render the payment form
     if request.method == "GET":
-        return render(request, 'portal/index.html')
+        return render(request, "portal/index.html")
 
     # Only accept POST or GET requests
     return JsonResponse({"error": "Method not allowed"}, status=405)
+

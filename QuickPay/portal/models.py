@@ -11,16 +11,29 @@ import json
 load_dotenv()
 
 
+class PaymentProfile(models.Model):
+    processor = models.CharField(max_length=2,default="A")
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(max_length=128)
+    clientID = models.IntegerField(null=True)
+    clientName = models.CharField(null=True,max_length=128)
+    email = models.CharField(null=True,max_length=32)
+    customerType = models.CharField(null=True,max_length=32, default="Business")
+    customerProfile = models.CharField(null=True,max_length=12)
+    paymentProfileID = models.CharField(null=True,max_length=16)
+    status= models.CharField(null=True,max_length=32,default="Active")
+
+
 # Create your models here.
 class Transaction(models.Model):
-    processor = models.CharField(max_length=1)
+    processor = models.CharField(max_length=2)
     result = models.CharField(max_length=64, default="Not Submitted")
     created_at = models.DateTimeField(auto_now_add=True)
     invoiceID = models.CharField(max_length=16)
     refID = models.CharField(max_length=64)
     transId = models.CharField(max_length=254, null=True, blank=True)
     amount = models.CharField(max_length=64)
-    salesperson = models.CharField(max_length=254)
+    salesperson = models.CharField(max_length=128)
     submitted = models.BooleanField(default=False)  # type:ignore
     resultStatus = models.CharField(
         max_length=8, null=True, blank=True
@@ -65,7 +78,7 @@ class Transaction(models.Model):
         max_length=254, null=True, blank=True
     )  # transactionResponse.errors.error[0].errorText
 
-    def getResults(self):
+    def getResults(self) -> dict[str, str]:
         result = {
             "processor": str(self.processor),
             "result": str(self.result),
