@@ -5,16 +5,20 @@ import json
 from .models import Transaction, PaymentProfile
 from rich import print
 
+
+@csrf_exempt
 def dashboard(request):
     return render(request, "dashboard.html")
 
+
+@csrf_exempt
 def portal(request):
     print(f"Request Captured: {request}")
     return render(request, "payment.html")
 
 
 @csrf_exempt
-def process_payment(request):
+def processQuickPay(request):
     """Process a payment transaction"""
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -24,12 +28,29 @@ def process_payment(request):
         amount = payload.get("amount")
         cardDetails = payload.get("cardDetails")
         salesperson = payload.get("salesperson")
-
+        customerDetails = payload.get("customerDetails")
+        try:
+            profile = PaymentProfile.objects.get(clientID=customerDetails["clientID"])
+        except PaymentProfile.DoesNotExist:
+            PaymentProfile.createPaymentProfile(
+                firstName=customerDetails["firstName"],
+                lastName=customerDetails["lastName"],
+                address=customerDetails["address"],
+                zipCode=customerDetails["zipCode"],
+                companyName=customerDetails["companyName"],
+                clientID=customerDetails.get("clientID"),
+                createdBy=payload.get("salesperson", "System"),
+            )
+            profile = PaymentProfile.objects.get(clientID=customerDetails["clientID"])
+            profile.addPaymentMethod(cardDetails=cardDetails)
         if not amount or not cardDetails or not salesperson:
             return JsonResponse({"error": "Missing required fields"}, status=400)
 
         transactionResult = Transaction.processTransaction(
-            amount, cardDetails, salesperson
+            amount=amount,
+            cardDetails=cardDetails,
+            clientId=customerDetails["clientID"],
+            salesperson=salesperson,
         )
         print(f"Response: {transactionResult}")
         return JsonResponse(transactionResult)
@@ -51,6 +72,10 @@ def create_customer_profile(request):
         customerDetails = payload.get("customerDetails")
         cardDetails = payload.get("cardDetails", None)
 
+        print(
+            f"Received request with customer details: {json.dumps(customerDetails, indent=2)}"
+        )
+
         if not customerDetails:
             return JsonResponse({"error": "Missing customer details"}, status=400)
 
@@ -59,34 +84,65 @@ def create_customer_profile(request):
             "lastName",
             "address",
             "zipCode",
-            "email",
             "companyName",
         ]
         for field in required_fields:
             if field not in customerDetails:
+                print(f"Validation failed: missing field {field}")
                 return JsonResponse(
                     {"error": f"Missing required field: {field}"}, status=400
                 )
 
         # Create profile
-        PaymentProfile.createPaymentProfile(
+        print(
+            f"Creating payment profile for {customerDetails['firstName']} {customerDetails['lastName']}"
+        )
+        profile_result = PaymentProfile.createPaymentProfile(
             firstName=customerDetails["firstName"],
             lastName=customerDetails["lastName"],
             address=customerDetails["address"],
             zipCode=customerDetails["zipCode"],
-            email=customerDetails["email"],
             companyName=customerDetails["companyName"],
-            clientID=customerDetails.get("clientID"),
-            created_by=payload.get("salesperson", "System"),
+            clientID=str(customerDetails.get("clientID")),
+            createdBy=payload.get("salesperson", "System"),
         )
-        profile = PaymentProfile.objects.get(clientID=customerDetails.get("clientID"))
+
+        # Check if profile creation was successful
+        if not profile_result or not isinstance(profile_result, PaymentProfile):
+            print(f"Profile creation failed. Result: {profile_result}")
+            return JsonResponse(
+                {
+                    "error": "Failed to create customer profile in payment gateway",
+                    "details": str(profile_result)
+                    if profile_result
+                    else "No response from payment gateway",
+                },
+                status=500,
+            )
+
+        profile = profile_result  # Use the returned profile object directly
+
+        if not profile.customerProfileID:
+            print("Profile created but no customerProfileID received")
+            return JsonResponse(
+                {
+                    "error": "Customer profile created but no ID received from payment gateway"
+                },
+                status=500,
+            )
 
         # Add payment method if provided
-        if cardDetails and profile.customerProfileID:
+        if cardDetails:
+            print(f"Adding payment method for profile {profile.customerProfileID}")
             payment_result = profile.addPaymentMethod(cardDetails)
+            print(f"Payment method addition result: {payment_result}")
             if "error" in payment_result:
                 return JsonResponse(
-                    {"profile": "created", "payment_method": payment_result}
+                    {
+                        "profile": "created",
+                        "customer_profile_id": profile.customerProfileID,
+                        "payment_method": payment_result,
+                    }
                 )
 
         return JsonResponse(
@@ -96,10 +152,16 @@ def create_customer_profile(request):
                 "customer_profile_id": profile.customerProfileID,
             }
         )
+
     except json.JSONDecodeError:
+        print("Invalid JSON received in request")
         return JsonResponse({"error": "Invalid JSON"}, status=400)
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Unexpected error in create_customer_profile: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+
+        print(f"Traceback: {traceback.format_exc()}")
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -120,7 +182,9 @@ def add_payment_method(request):
             return JsonResponse({"error": "Missing card details"}, status=400)
 
         try:
-            profile = PaymentProfile.objects.get(clientID=clientID)
+            profile = PaymentProfile.objects.filter(clientID=clientID).first()
+            if not profile:
+                return JsonResponse({"error": "Customer profile not found"}, status=404)
         except PaymentProfile.DoesNotExist:
             return JsonResponse({"error": "Customer profile not found"}, status=404)
 
@@ -153,13 +217,12 @@ def get_customer_profile(request, client_id=None):
             "firstName": profile.firstName,
             "lastName": profile.lastName,
             "companyName": profile.companyName,
-            "email": profile.email,
             "address": profile.address,
             "zipCode": profile.zipCode,
             "customerProfileID": profile.customerProfileID,
             "paymentProfileID": profile.paymentProfileID,
             "status": profile.status,
-            "created_at": profile.created_at,
+            "created_at": profile.createdAt,
         }
 
         # If customer has a profile in Authorize.net, get additional details
@@ -180,6 +243,28 @@ def get_customer_profile(request, client_id=None):
     except Exception as e:
         print(f"Error: {e}")
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def getClients(request):
+    clientList = []
+    seen_clients = set()  # Track unique clientIDs
+
+    # Get all profiles ordered by createdAt descending to get latest first
+    clientObjs = PaymentProfile.objects.all().order_by("-createdAt")
+
+    for obj in clientObjs:
+        # If we haven't seen this clientID yet, add it to our list
+        if obj.clientID not in seen_clients:
+            seen_clients.add(obj.clientID)  # Mark this clientID as seen
+            clientObj = {
+                "clientID": str(obj.clientID),
+                "companyName": str(obj.companyName),
+                "address": str(obj.address),
+                "createdAt": str(obj.createdAt),
+            }
+            clientList.append(clientObj)
+
+    return JsonResponse(data={"rows": clientList})
 
 
 @csrf_exempt
