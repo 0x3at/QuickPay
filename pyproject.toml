@@ -8,6 +8,7 @@ dependencies = [
     "authorizenet>=1.1.5",
     "django>=5.1.7",
     "django-debug-toolbar>=5.0.1",
+    "mysqlclient>=2.2.7",
     "python-dotenv>=1.0.1",
     "rich>=13.9.4",
 ]

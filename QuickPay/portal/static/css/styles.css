@@ -412,3 +412,24 @@ body {
     margin-top: 0.25rem;
   }
 }
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard-link {
+  display: flex;
+  align-items: center;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dashboard-link:hover {
+  color: #005ae6;
+}
+
+.material-icons {
+  font-size: 24px;
+}

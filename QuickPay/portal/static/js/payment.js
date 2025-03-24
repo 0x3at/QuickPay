@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const closeReceiptBtn = document.getElementById('close-receipt');
   const downloadReceiptBtn = document.getElementById('print-receipt');
   
+  // Add new input references
+  const firstNameInput = document.getElementById('firstName');
+  const lastNameInput = document.getElementById('lastName');
+  const companyNameInput = document.getElementById('companyName');
+  const addressInput = document.getElementById('address');
+  const zipCodeInput = document.getElementById('zipCode');
+  const clientIDInput = document.getElementById('clientID');
+  
   // Format card number with spaces
   cardNumberInput.addEventListener('input', function(e) {
     let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -125,18 +133,28 @@ document.addEventListener('DOMContentLoaded', function() {
     submitButton.classList.add('loading');
     submitButton.disabled = true;
     
-    // Prepare payload
+    // Prepare payload with additional fields
     const payload = {
-      number: cardNumberInput.value.replace(/\s+/g, ''),
-      expiration: expiryInput.value,
-      cvv: cvvInput.value,
+      cardDetails: {
+        cardNumber: cardNumberInput.value.replace(/\s+/g, ''),
+        expirationDate: expiryInput.value,
+        cardCode: cvvInput.value
+      },
+      customerDetails: {
+        firstName: firstNameInput.value,
+        lastName: lastNameInput.value,
+        companyName: companyNameInput.value,
+        address: addressInput.value,
+        zipCode: zipCodeInput.value,
+        clientID: clientIDInput.value || null
+      },
       amount: amountInput.value,
       salesperson: document.getElementById('salesperson').value
     };
     
     try {
-      // Make real API call to backend
-      const response = await fetch('/process/', {
+      // Make API call to backend
+      const response = await fetch('/processQuickPay/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
