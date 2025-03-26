@@ -7,13 +7,15 @@ from authorizenet.apicontrollers import (
     createTransactionController,
     createCustomerProfileController,
     createCustomerPaymentProfileController,
+    getCustomerPaymentProfileController,
     getCustomerProfileController,
+    getCustomerPaymentProfileListController
 )
 from dotenv import load_dotenv
 from rich import print
 import json
 
-load_dotenv()
+load_dotenv(".env")
 
 
 class PaymentProfile(models.Model):
@@ -409,6 +411,96 @@ class PaymentProfile(models.Model):
                 "errorText": "No response from payment gateway",
             }
 
+    @staticmethod
+    def getPaymentProfiles(clientID: int):
+        profiles = []
+        try:
+            print(f"\nStarting getPaymentProfiles for clientID: {clientID}")
+            paymentList = PaymentProfile.objects.filter(clientID=clientID).all()
+            print(f"Found {len(paymentList)} payment profiles in database")
+            
+        except PaymentProfile.DoesNotExist:
+            print("No payment profiles found for clientID:", clientID)
+            raise PaymentProfile.DoesNotExist
+            
+        try:
+            for payment in paymentList:
+                print(f"\nProcessing payment record:")
+                print(f"CustomerProfileID: {payment.customerProfileID}")
+                print(f"PaymentProfileID: {payment.paymentProfileID}")
+                
+                if payment.customerProfileID and payment.paymentProfileID:
+                    print(f"\nFetching payment profile {payment.paymentProfileID} for customer {payment.customerProfileID}")
+                    
+                    request = authApi.getCustomerPaymentProfileRequest()
+                    request.merchantAuthentication = Transaction.getAuthType()
+                    request.customerProfileId = payment.customerProfileID
+                    request.customerPaymentProfileId = payment.paymentProfileID
+                    
+                    # Log request details
+                    print("\nRequest details:")
+                    print(f"Environment: {os.getenv('AUTH_NET_ENVIRON')}")
+                    print(f"Auth Name: {request.merchantAuthentication.name}")
+                    print(f"Customer Profile ID: {request.customerProfileId}")
+                    print(f"Payment Profile ID: {request.customerPaymentProfileId}")
+                    
+                    controller = getCustomerPaymentProfileController(request)
+                    controller.setenvironment(os.getenv('AUTH_NET_ENVIRON'))
+                    
+                    try:
+                        print("\nExecuting API request...")
+                        controller.execute()
+                        response = controller.getresponse()
+                        print("Got API response")
+                        
+                        if response is not None:
+                            print(f"Response Result Code: {response.messages.resultCode if hasattr(response, 'messages') else 'No messages'}")
+                            
+                            if hasattr(response, 'messages') and response.messages.resultCode == "Ok":
+                                if hasattr(response, 'paymentProfile'):
+                                    try:
+                                        print("\nParsing payment profile...")
+                                        parsedProfile = {
+                                            "customerProfileID": str(payment.customerProfileID),
+                                            "paymentProfileId":str(payment.paymentProfileID),
+                                            "cardNumber":str(response.paymentProfile.payment.creditCard.cardNumber),
+                                            "expirationDate":str(response.paymentProfile.payment.creditCard.expirationDate),
+                                        }
+                                        profiles.append(parsedProfile)
+                                        print("Successfully parsed profile:", parsedProfile)
+                                    except Exception as parse_error:
+                                        print("\nError parsing profile response:")
+                                        print(f"Error type: {type(parse_error)}")
+                                        print(f"Error message: {str(parse_error)}")
+                                        print("Response structure:", Transaction.printError(response))
+                            else:
+                                print(f"\nError response for profile {payment.paymentProfileID}:")
+                                if hasattr(response, 'messages') and hasattr(response.messages, 'message'):
+                                    for message in response.messages.message:
+                                        print(f"Message Code: {getattr(message, 'code', 'N/A')}")
+                                        print(f"Message Text: {getattr(message, 'text', 'N/A')}")
+                                print("Full error response:", Transaction.printError(response))
+                        else:
+                            print("Received null response from API")
+                    
+                    except Exception as exec_error:
+                        print(f"\nController execution error:")
+                        print(f"Error type: {type(exec_error)}")
+                        print(f"Error message: {str(exec_error)}")
+                        import traceback
+                        print(f"Traceback: {traceback.format_exc()}")
+                        continue
+                        
+            print(f"\nFinished processing. Found {len(profiles)} valid payment profiles")
+            return profiles
+            
+        except Exception as e:
+            print("\nUnexpected error in getPaymentProfiles:")
+            print(f"Error type: {type(e)}")
+            print(f"Error message: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            return []
 
 # Create your models here.
 class Transaction(models.Model):

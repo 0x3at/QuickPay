@@ -8,7 +8,11 @@ from rich import print
 
 @csrf_exempt
 def dashboard(request):
-    return render(request, "dashboard.html")
+    return render(request, "clients.html")
+
+@csrf_exempt
+def getClient(request):
+    return render(request, "client.html")
 
 
 @csrf_exempt
@@ -211,8 +215,9 @@ def get_customer_profile(request, client_id=None):
         return JsonResponse({"error": "Missing client ID"}, status=400)
 
     try:
-        profile = PaymentProfile.objects.get(clientID=client_id)
-        profile_data = {
+        profiles = PaymentProfile.objects.filter(clientID=int(client_id))
+        profile = profiles[0]
+        profileData = {
             "clientID": profile.clientID,
             "firstName": profile.firstName,
             "lastName": profile.lastName,
@@ -220,24 +225,12 @@ def get_customer_profile(request, client_id=None):
             "address": profile.address,
             "zipCode": profile.zipCode,
             "customerProfileID": profile.customerProfileID,
-            "paymentProfileID": profile.paymentProfileID,
             "status": profile.status,
             "created_at": profile.createdAt,
         }
+        paymentMethods = PaymentProfile.getPaymentProfiles(clientID=int(client_id))
 
-        # If customer has a profile in Authorize.net, get additional details
-        if profile.customerProfileID:
-            auth_net_profile = PaymentProfile.getCustomerProfile(
-                profile.customerProfileID
-            )
-            if (
-                not isinstance(auth_net_profile, dict)
-                or "error" not in auth_net_profile
-            ):
-                # Add any additional Authorize.net profile data if needed
-                profile_data["auth_net_active"] = True
-
-        return JsonResponse(profile_data)
+        return JsonResponse({"profileData":profileData,"paymentMethods":paymentMethods})
     except PaymentProfile.DoesNotExist:
         return JsonResponse({"error": "Customer profile not found"}, status=404)
     except Exception as e:

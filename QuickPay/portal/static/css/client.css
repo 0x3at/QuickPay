@@ -16,6 +16,9 @@
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --radius: 0.375rem;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --text-primary: #0070f3;
   }
   
   /* Reset and Base Styles */
@@ -177,11 +180,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 1rem;
+    padding: 0 2rem;
     background-color: var(--card);
-    border-bottom: 12px solid var(--primary);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -196,6 +197,11 @@
   .page-title p {
     color: var(--muted);
     font-size: 0.875rem;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
   }
   
   .mobile-sidebar-toggle {
@@ -218,20 +224,142 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow-md);
     overflow: hidden;
+    margin-bottom: 2rem;
   }
   
   .card-header {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .card-header h2 {
+  .card-header h2,
+  .card-header h3 {
     font-size: 1.25rem;
     font-weight: 600;
+    margin: 0;
+  }
+  
+  .card-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
   }
   
   .card-content {
     padding: 1.5rem;
+  }
+  
+  /* Client Profile Card */
+  .client-profile-card {
+    margin-bottom: 0;
+  }
+  
+  .client-profile-header {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .client-avatar {
+    width: 4rem;
+    height: 4rem;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  .client-info {
+    flex: 1;
+  }
+  
+  .client-info h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .client-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .client-since {
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  
+  .client-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  
+  .client-actions {
+    flex-shrink: 0;
+  }
+  
+  /* Tabs */
+  .tabs-container {
+    margin-bottom: 2rem;
+  }
+  
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+  }
+  
+  .tab-btn {
+    padding: 0.75rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  
+  .tab-btn:hover {
+    color: var(--foreground);
+  }
+  
+  .tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+  
+  .tab-content {
+    position: relative;
+  }
+  
+  .tab-pane {
+    display: none;
+  }
+  
+  .tab-pane.active {
+    display: block;
   }
   
   /* Table */
@@ -263,6 +391,10 @@
   
   .data-table tbody tr:hover {
     background-color: rgba(0, 0, 0, 0.02);
+  }
+  
+  .text-primary {
+    color: var(--text-primary);
   }
   
   /* Badges and Status */
@@ -334,7 +466,7 @@
     font-weight: 500;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     border: none;
   }
   
@@ -347,8 +479,45 @@
     background-color: var(--primary-hover);
   }
   
-  .btn i {
-    margin-right: 0.5rem;
+  .btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--foreground);
+  }
+  
+  .btn-outline:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .btn-danger {
+    color: var(--danger);
+  }
+  
+  .btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+  
+  .btn-text {
+    background: none;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  
+  .btn-text:hover {
+    color: var(--foreground);
+  }
+  
+  .btn-text.btn-danger:hover {
+    color: var(--danger);
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
   }
   
   .btn-block {
@@ -356,49 +525,186 @@
     width: 100%;
   }
   
-  /* Form Styles */
-  .payment-card {
-    max-width: 800px;
-    margin: 0 auto;
+  .btn i {
+    margin-right: 0.5rem;
   }
   
-  .payment-form {
+  /* Search and Filter */
+  .search-container {
+    position: relative;
+  }
+  
+  .search-input {
+    padding: 0.5rem 1rem 0.5rem 2.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    width: 250px;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  
+  .filter-container {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Pagination */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 1.5rem;
+  }
+  
+  .pagination-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius);
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  }
+  
+  .pagination-btn:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--foreground);
+  }
+  
+  .pagination-btn.active {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+  
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: var(--muted);
+  }
+  
+  /* Payment Methods */
+  .payment-methods-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+  }
+  
+  .payment-methods-list {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
   }
   
-  .form-section {
+  .payment-method-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    gap: 1rem;
+  }
+  
+  .payment-method-icon {
+    font-size: 2rem;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    flex-shrink: 0;
+  }
+  
+  .payment-method-icon.visa {
+    color: #1a1f71;
+  }
+  
+  .payment-method-icon.mastercard {
+    color: #eb001b;
+  }
+  
+  .payment-method-icon.amex {
+    color: #006fcf;
+  }
+  
+  .payment-method-details {
+    flex: 1;
+  }
+  
+  .payment-method-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+  
+  .payment-method-info {
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  
+  .payment-method-status {
+    margin-right: 1rem;
+  }
+  
+  .payment-method-status .badge.success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+  }
+  
+  .payment-method-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Quick Charge Form */
+  .quick-charge-form {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
   }
   
-  .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-  
-  .form-row {
-    display: flex;
-    gap: 1rem;
-  }
-  
   .form-group {
     display: flex;
     flex-direction: column;
-    flex: 1;
     gap: 0.5rem;
   }
   
   .form-group label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--foreground);
   }
   
-  .form-group input {
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
     padding: 0.75rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -406,58 +712,120 @@
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   
-  .form-group input:focus {
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
   }
   
-  .form-hint {
-    font-size: 0.75rem;
+  .form-actions {
+    margin-top: 0.5rem;
+  }
+  
+  /* Details Grid */
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  .details-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--foreground);
+  }
+  
+  .details-row {
+    display: flex;
+    margin-bottom: 0.75rem;
+  }
+  
+  .details-label {
+    width: 40%;
     color: var(--muted);
-    margin-top: 0.25rem;
+    font-size: 0.875rem;
   }
   
-  .form-divider {
-    height: 1px;
-    background-color: var(--border);
-    margin: 1rem 0;
+  .details-value {
+    width: 60%;
+    font-weight: 500;
   }
   
-  .payment-result {
+  /* Notes Timeline */
+  .notes-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .note-item {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .note-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  .note-avatar.system {
+    background-color: var(--muted);
+  }
+  
+  .note-content {
+    flex: 1;
+    background-color: var(--background);
     padding: 1rem;
     border-radius: var(--radius);
-    margin-bottom: 1rem;
-    display: none;
+    position: relative;
   }
   
-  .payment-result.success {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: var(--success);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-  
-  .payment-result.error {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: var(--error);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-  }
-  
-  .spinner {
-    display: none;
+  .note-content::before {
+    content: "";
+    position: absolute;
+    left: -0.5rem;
+    top: 1rem;
     width: 1rem;
     height: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
+    background-color: var(--background);
+    transform: rotate(45deg);
   }
   
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  .note-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  
+  .note-author {
+    font-weight: 500;
+  }
+  
+  .note-date {
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  
+  .note-text {
+    margin-bottom: 0.75rem;
+  }
+  
+  .note-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
   }
   
   /* Modal */
@@ -530,6 +898,7 @@
   .modal-footer {
     display: flex;
     justify-content: flex-end;
+    gap: 0.75rem;
     padding: 1.25rem 1.5rem;
     border-top: 1px solid var(--border);
   }
@@ -589,7 +958,24 @@
     font-weight: 500;
   }
   
+  /* Header Cards Container */
+  .header-cards-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
   /* Responsive Styles */
+  @media (max-width: 1200px) {
+    .payment-methods-container {
+      grid-template-columns: 1fr;
+    }
+    .header-cards-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
   @media (max-width: 768px) {
     .sidebar {
       transform: translateX(-100%);
@@ -616,13 +1002,26 @@
       padding: 1rem;
     }
   
-    .form-row {
+    .client-profile-header {
       flex-direction: column;
-      gap: 1.25rem;
+      align-items: flex-start;
+    }
+  
+    .client-actions {
+      align-self: flex-end;
+      margin-top: -2.5rem;
+    }
+  
+    .details-grid {
+      grid-template-columns: 1fr;
     }
   
     .hide-mobile {
       display: none;
+    }
+  
+    .header-cards-container {
+      grid-template-columns: 1fr;
     }
   }
   
@@ -646,6 +1045,76 @@
     .modal-footer {
       display: none;
     }
+  }
+  
+  /* Recent Notes Card */
+  .recent-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .note-preview {
+    padding: 0.75rem;
+    background-color: var(--background);
+    border-radius: var(--radius);
+  }
+  
+  .note-preview-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  
+  .note-author {
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  
+  .note-date {
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  
+  .note-text {
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  
+  /* Quick Payment Form */
+  .quick-payment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .quick-payment-form .form-group {
+    margin-bottom: 0;
+  }
+  
+  .quick-payment-form .btn-block {
+    margin-top: 0.5rem;
+  }
+  
+  .form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background-color: white;
+    font-size: 0.875rem;
+  }
+  
+  .form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
   }
   
   

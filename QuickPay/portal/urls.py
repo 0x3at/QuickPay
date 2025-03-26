@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path(route="", view=views.dashboard, name="dashboard"),
     path(route="payment", view=views.portal, name="portal"),
+    path(route="client", view=views.getClient, name="client"),
     path(route="processQuickPay/", view=views.processQuickPay, name="process"),
     path(
         route="createProfile/",

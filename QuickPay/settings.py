@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "QuickPay.portal",
+    "PayPortal",
 ]
 
 MIDDLEWARE = [
@@ -82,7 +83,7 @@ WSGI_APPLICATION = "QuickPay.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    "local": {
+    "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     },
@@ -97,17 +98,17 @@ DATABASES = {
     #         "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
     #     },
     # },
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DATABASE"),
-        "USER": os.getenv("DBUSER"),
-        "PASSWORD": os.getenv("DBPASSWORD"),
-        "HOST": os.getenv("DBHOST"),
-        "PORT": "3306",
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    },
+    # "default": {
+    #     "ENGINE": "django.db.backends.mysql",
+    #     "NAME": "ai",
+    #     "USER": os.getenv("DBUSER"),
+    #     "PASSWORD": os.getenv("DBPASSWORD"),
+    #     "HOST": os.getenv("DBHOST"),
+    #     "PORT": "3306",
+    #     "OPTIONS": {
+    #         "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+    #     },
+    # },
 }
 
 

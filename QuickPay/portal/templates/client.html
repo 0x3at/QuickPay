@@ -1,0 +1,622 @@
+{% extends 'dashboard.html' %} 
+{% load static %} 
+{% block page_title%}
+Client Details
+{% endblock %}
+{%block header_actions%}
+{%endblock %}
+{%block styles%}
+<link rel="stylesheet" href="{% static 'css/client.css' %}"/>
+{%endblock %}
+{% block content %}
+      <div class="content-container">
+        <!-- Client Profile Card -->
+        <div class="header-cards-container">
+          <div class="card client-profile-card">
+            <div class="client-profile-header">
+              <div class="client-info">
+                <h2>Acme Corporation</h2>
+                <div class="client-meta">
+                  <span class="badge">5000</span>
+                </div>
+                <div class="client-contact">
+                  <div class="contact-item">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>billing@acmecorp.com</span>
+                  </div>
+                  <div class="contact-item">
+                    <i class="fa-solid fa-phone"></i>
+                    <span>(555) 123-4567</span>
+                  </div>
+                  <div class="contact-item">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>123 Main St, San Francisco, CA 94105</span>
+                  </div>
+                </div>
+              </div>
+              <div class="client-actions">
+                <button class="btn btn-outline">
+                  <i class="fa-solid fa-pencil"></i> Edit
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card client-profile-card">
+            <div class="card-header">
+              <h3>Recent Notes</h3>
+              <button class="btn btn-outline btn-sm">
+                <i class="fa-solid fa-plus"></i> Add Note
+              </button>
+            </div>
+            <div class="card-content">
+              <div class="recent-notes">
+                <div class="note-preview">
+                  <div class="note-preview-header">
+                    <span class="note-author">Sarah Johnson</span>
+                    <span class="note-date">2h ago</span>
+                  </div>
+                  <p class="note-text">Called client to discuss upcoming renewal. They are interested in upgrading...</p>
+                </div>
+                <div class="note-preview">
+                  <div class="note-preview-header">
+                    <span class="note-author">System</span>
+                    <span class="note-date">1d ago</span>
+                  </div>
+                  <p class="note-text">Payment of $1,250.00 processed successfully.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card client-profile-card">
+            <div class="card-header">
+              <h3>Quick Payment</h3>
+            </div>
+            <div class="card-content">
+              <form class="quick-payment-form">
+                <div class="form-group">
+                  <label for="quick-amount">Amount ($)</label>
+                  <input type="number" id="quick-amount" placeholder="0.00" step="0.01" min="0.01">
+                </div>
+                <div class="form-group">
+                  <label for="quick-payment-method">Payment Method</label>
+                  <select id="quick-payment-method" class="form-select">
+                    <option value="visa-4242">Visa ending in 4242 (Default)</option>
+                    <option value="mc-5678">Mastercard ending in 5678</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                  <i class="fa-solid fa-bolt"></i> Process Payment
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Tabs -->
+        <div class="tabs-container">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="transactions">Transactions</button>
+            <button class="tab-btn" data-tab="payment-methods">Payment Methods</button>
+            <button class="tab-btn" data-tab="details">Details</button>
+            <button class="tab-btn" data-tab="notes">Notes</button>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="tab-content">
+            <!-- Transactions Tab -->
+            <div class="tab-pane active" id="transactions">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Transaction History</h3>
+                  <div class="card-actions">
+                    <div class="search-container">
+                      <input type="text" placeholder="Search transactions..." class="search-input">
+                      <i class="fa-solid fa-search search-icon"></i>
+                    </div>
+                    <div class="filter-container">
+                      <button class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-filter"></i> Filter
+                      </button>
+                      <button class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-download"></i> Export
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-content">
+                  <div class="table-container">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Transaction ID</th>
+                          <th>Date</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Payment Method</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <span class="text-primary">TRX-10045</span>
+                          </td>
+                          <td>Jun 15, 2025</td>
+                          <td>$1,250.00</td>
+                          <td>
+                            <span class="status-badge success">Completed</span>
+                          </td>
+                          <td>Visa ending in 4242</td>
+                          <td>
+                            <div class="action-buttons">
+                              <button class="action-btn" title="View Receipt">
+                                <i class="fa-solid fa-receipt"></i>
+                              </button>
+                              <button class="action-btn" title="Refund">
+                                <i class="fa-solid fa-rotate-left"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <span class="text-primary">TRX-10044</span>
+                          </td>
+                          <td>Jun 01, 2025</td>
+                          <td>$750.00</td>
+                          <td>
+                            <span class="status-badge success">Completed</span>
+                          </td>
+                          <td>Mastercard ending in 5678</td>
+                          <td>
+                            <div class="action-buttons">
+                              <button class="action-btn" title="View Receipt">
+                                <i class="fa-solid fa-receipt"></i>
+                              </button>
+                              <button class="action-btn" title="Refund">
+                                <i class="fa-solid fa-rotate-left"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <span class="text-primary">TRX-10043</span>
+                          </td>
+                          <td>May 15, 2025</td>
+                          <td>$2,500.00</td>
+                          <td>
+                            <span class="status-badge success">Completed</span>
+                          </td>
+                          <td>Visa ending in 4242</td>
+                          <td>
+                            <div class="action-buttons">
+                              <button class="action-btn" title="View Receipt">
+                                <i class="fa-solid fa-receipt"></i>
+                              </button>
+                              <button class="action-btn" title="Refund">
+                                <i class="fa-solid fa-rotate-left"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <span class="text-primary">TRX-10042</span>
+                          </td>
+                          <td>May 01, 2025</td>
+                          <td>$1,000.00</td>
+                          <td>
+                            <span class="status-badge success">Completed</span>
+                          </td>
+                          <td>Mastercard ending in 5678</td>
+                          <td>
+                            <div class="action-buttons">
+                              <button class="action-btn" title="View Receipt">
+                                <i class="fa-solid fa-receipt"></i>
+                              </button>
+                              <button class="action-btn" title="Refund">
+                                <i class="fa-solid fa-rotate-left"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="pagination">
+                    <button class="pagination-btn" disabled>
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">3</button>
+                    <span class="pagination-ellipsis">...</span>
+                    <button class="pagination-btn">10</button>
+                    <button class="pagination-btn">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Methods Tab -->
+            <div class="tab-pane" id="payment-methods">
+              <div class="payment-methods-container">
+                <!-- Saved Payment Methods -->
+                <div class="card">
+                  <div class="card-header">
+                    <h3>Saved Payment Methods</h3>
+                    <button class="btn btn-outline btn-sm">
+                      <i class="fa-solid fa-plus"></i> Add Payment Method
+                    </button>
+                  </div>
+                  <div class="card-content">
+                    <div class="payment-methods-list">
+                      <div class="payment-method-card">
+                        <div class="payment-method-icon visa">
+                          <i class="fa-brands fa-cc-visa"></i>
+                        </div>
+                        <div class="payment-method-details">
+                          <div class="payment-method-name">Visa ending in 4242</div>
+                          <div class="payment-method-info">Expires 12/2026</div>
+                          <div class="payment-method-info">John Smith</div>
+                        </div>
+                        <div class="payment-method-status">
+                          <span class="badge success">Default</span>
+                        </div>
+                        <div class="payment-method-actions">
+                          <button class="btn btn-sm btn-outline">Edit</button>
+                          <button class="btn btn-sm btn-outline btn-danger">Remove</button>
+                        </div>
+                      </div>
+
+                      <div class="payment-method-card">
+                        <div class="payment-method-icon mastercard">
+                          <i class="fa-brands fa-cc-mastercard"></i>
+                        </div>
+                        <div class="payment-method-details">
+                          <div class="payment-method-name">Mastercard ending in 5678</div>
+                          <div class="payment-method-info">Expires 09/2025</div>
+                          <div class="payment-method-info">Jane Doe</div>
+                        </div>
+                        <div class="payment-method-status">
+                          <!-- No badge for non-default -->
+                        </div>
+                        <div class="payment-method-actions">
+                          <button class="btn btn-sm btn-outline">Set Default</button>
+                          <button class="btn btn-sm btn-outline">Edit</button>
+                          <button class="btn btn-sm btn-outline btn-danger">Remove</button>
+                        </div>
+                      </div>
+
+                      <div class="payment-method-card">
+                        <div class="payment-method-icon amex">
+                          <i class="fa-brands fa-cc-amex"></i>
+                        </div>
+                        <div class="payment-method-details">
+                          <div class="payment-method-name">Amex ending in 9876</div>
+                          <div class="payment-method-info">Expires 03/2027</div>
+                          <div class="payment-method-info">Robert Johnson</div>
+                        </div>
+                        <div class="payment-method-status">
+                          <!-- No badge for non-default -->
+                        </div>
+                        <div class="payment-method-actions">
+                          <button class="btn btn-sm btn-outline">Set Default</button>
+                          <button class="btn btn-sm btn-outline">Edit</button>
+                          <button class="btn btn-sm btn-outline btn-danger">Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Process New Charge -->
+                <div class="card">
+                  <div class="card-header">
+                    <h3>Process New Charge</h3>
+                  </div>
+                  <div class="card-content">
+                    <form id="quick-charge-form" class="quick-charge-form">
+                      <div class="form-group">
+                        <label for="payment-method">Payment Method</label>
+                        <select id="payment-method" name="payment-method" class="form-select">
+                          <option value="visa-4242">Visa ending in 4242 (Default)</option>
+                          <option value="mc-5678">Mastercard ending in 5678</option>
+                          <option value="amex-9876">Amex ending in 9876</option>
+                        </select>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="amount">Amount ($)</label>
+                        <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" min="0.01" required>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description" name="description" placeholder="Payment for services">
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="salesperson">Salesperson</label>
+                        <input type="text" id="salesperson" name="salesperson" placeholder="John Doe" required>
+                      </div>
+                      
+                      <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-block">Process Charge</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Details Tab -->
+            <div class="tab-pane" id="details">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Client Details</h3>
+                  <button class="btn btn-outline btn-sm">
+                    <i class="fa-solid fa-pencil"></i> Edit
+                  </button>
+                </div>
+                <div class="card-content">
+                  <div class="details-grid">
+                    <div class="details-section">
+                      <h4>Company Information</h4>
+                      <div class="details-row">
+                        <div class="details-label">Company Name</div>
+                        <div class="details-value">Acme Corporation</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Client ID</div>
+                        <div class="details-value">CL-5000</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Industry</div>
+                        <div class="details-value">Technology</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Tax ID</div>
+                        <div class="details-value">12-3456789</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Website</div>
+                        <div class="details-value">www.acmecorp.com</div>
+                      </div>
+                    </div>
+                    
+                    <div class="details-section">
+                      <h4>Primary Contact</h4>
+                      <div class="details-row">
+                        <div class="details-label">Name</div>
+                        <div class="details-value">John Smith</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Title</div>
+                        <div class="details-value">Chief Financial Officer</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Email</div>
+                        <div class="details-value">john.smith@acmecorp.com</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Phone</div>
+                        <div class="details-value">(555) 123-4567</div>
+                      </div>
+                    </div>
+                    
+                    <div class="details-section">
+                      <h4>Billing Information</h4>
+                      <div class="details-row">
+                        <div class="details-label">Billing Address</div>
+                        <div class="details-value">123 Main St, San Francisco, CA 94105</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Billing Email</div>
+                        <div class="details-value">billing@acmecorp.com</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Billing Contact</div>
+                        <div class="details-value">Jane Doe</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Payment Terms</div>
+                        <div class="details-value">Net 30</div>
+                      </div>
+                    </div>
+                    
+                    <div class="details-section">
+                      <h4>Account Information</h4>
+                      <div class="details-row">
+                        <div class="details-label">Account Manager</div>
+                        <div class="details-value">Sarah Johnson</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Client Since</div>
+                        <div class="details-value">May 12, 2025</div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Status</div>
+                        <div class="details-value"><span class="status-badge success">Active</span></div>
+                      </div>
+                      <div class="details-row">
+                        <div class="details-label">Last Transaction</div>
+                        <div class="details-value">Jun 15, 2025</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes Tab -->
+            <div class="tab-pane" id="notes">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Notes & Activity</h3>
+                  <button class="btn btn-outline btn-sm">
+                    <i class="fa-solid fa-plus"></i> Add Note
+                  </button>
+                </div>
+                <div class="card-content">
+                  <div class="notes-timeline">
+                    <div class="note-item">
+                      <div class="note-avatar">
+                        <span>SJ</span>
+                      </div>
+                      <div class="note-content">
+                        <div class="note-header">
+                          <span class="note-author">Sarah Johnson</span>
+                          <span class="note-date">Jun 16, 2025 at 2:45 PM</span>
+                        </div>
+                        <div class="note-text">
+                          Called client to discuss upcoming renewal. They are interested in upgrading to the premium plan. Will send proposal by end of week.
+                        </div>
+                        <div class="note-actions">
+                          <button class="btn btn-text">Edit</button>
+                          <button class="btn btn-text btn-danger">Delete</button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="note-item system">
+                      <div class="note-avatar system">
+                        <i class="fa-solid fa-robot"></i>
+                      </div>
+                      <div class="note-content">
+                        <div class="note-header">
+                          <span class="note-author">System</span>
+                          <span class="note-date">Jun 15, 2025 at 10:30 AM</span>
+                        </div>
+                        <div class="note-text">
+                          Payment of $1,250.00 processed successfully. Transaction ID: TRX-10045
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="note-item">
+                      <div class="note-avatar">
+                        <span>RB</span>
+                      </div>
+                      <div class="note-content">
+                        <div class="note-header">
+                          <span class="note-author">Robert Brown</span>
+                          <span class="note-date">Jun 10, 2025 at 11:15 AM</span>
+                        </div>
+                        <div class="note-text">
+                          Met with client to discuss their needs. They are expanding their operations and will need additional services starting next quarter.
+                        </div>
+                        <div class="note-actions">
+                          <button class="btn btn-text">Edit</button>
+                          <button class="btn btn-text btn-danger">Delete</button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="note-item system">
+                      <div class="note-avatar system">
+                        <i class="fa-solid fa-robot"></i>
+                      </div>
+                      <div class="note-content">
+                        <div class="note-header">
+                          <span class="note-author">System</span>
+                          <span class="note-date">Jun 1, 2025 at 9:45 AM</span>
+                        </div>
+                        <div class="note-text">
+                          Payment of $750.00 processed successfully. Transaction ID: TRX-10044
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Quick Charge Receipt Modal -->
+  <div id="charge-receipt-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Charge Receipt</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="receipt-status">
+          <div class="receipt-icon">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h3>Charge Successful</h3>
+        </div>
+        
+        <div class="receipt-section">
+          <h4>Client Information</h4>
+          <div class="receipt-details">
+            <div class="receipt-row">
+              <span class="receipt-label">Client:</span>
+              <span id="receipt-client" class="receipt-value">Acme Corporation</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Client ID:</span>
+              <span id="receipt-clientId" class="receipt-value">CL-5000</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="receipt-section">
+          <h4>Transaction Details</h4>
+          <div class="receipt-details">
+            <div class="receipt-row">
+              <span class="receipt-label">Transaction ID:</span>
+              <span id="receipt-transId" class="receipt-value">TRX-10046</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Amount:</span>
+              <span id="receipt-amount" class="receipt-value">$500.00</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Date:</span>
+              <span id="receipt-date" class="receipt-value">Jun 20, 2025 10:30 AM</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Payment Method:</span>
+              <span id="receipt-card" class="receipt-value">Visa ending in 4242</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Description:</span>
+              <span id="receipt-description" class="receipt-value">Monthly service fee</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Salesperson:</span>
+              <span id="receipt-salesperson" class="receipt-value">Sarah Johnson</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">Status:</span>
+              <span id="receipt-status" class="receipt-value">Approved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="print-receipt" class="btn btn-primary">
+          <i class="fa-solid fa-print"></i> Print Receipt
+        </button>
+        <button id="email-receipt" class="btn btn-outline">
+          <i class="fa-solid fa-envelope"></i> Email Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+  {% block extra_scripts %}
+  <script src="{% static 'js/client.js' %}"></script>
+  {%endblock%}
+{% endblock %} 
+
