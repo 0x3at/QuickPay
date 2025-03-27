@@ -12,6 +12,7 @@ from PayPortal.models import (
     CardBillingDetails,
     CardDetails,
     Client,
+    ClientNote,
     PaymentProfile,
 )
 
@@ -20,110 +21,203 @@ from PayPortal.models import (
 def chargeCard(request) -> JsonResponse:
     """Charge a card"""
     if request.method != "POST":
-        print(Panel(
-            f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
-            title="❌[ERROR] |chargeCard| Method Error",
-            border_style="bright_red"
-        ))
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
+                title="❌[ERROR] |chargeCard| Method Error",
+                border_style="bright_red",
+            )
+        )
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
-        print(Panel(
-            "[bold bright_blue]Processing card charge request[/bold bright_blue]",
-            title="🔎[INFO] |chargeCard| Payment Processing",
-            border_style="bright_blue"
-        ))
-        
+        print(
+            Panel(
+                "[bold bright_blue]Processing card charge request[/bold bright_blue]",
+                title="🔎[INFO] |chargeCard| Payment Processing",
+                border_style="bright_blue",
+            )
+        )
+
         payload = json.loads(request.body)
         clientID = payload.get("clientID")
         amount = payload.get("amount")
         cardDetails = payload.get("cardDetails")
         salesperson = payload.get("salesperson")
-        
-        # Validate required fields
-        if not clientID:
-            print(Panel(
-                "[bold red]Missing clientID in request[/bold red]",
-                title="❌[ERROR] |chargeCard| Validation Error",
-                border_style="bright_red"
-            ))
-            return JsonResponse({"error": "Missing clientID"}, status=400)
-            
-        if not amount:
-            print(Panel(
-                "[bold red]Missing amount in request[/bold red]",
-                title="❌[ERROR] |chargeCard| Validation Error",
-                border_style="bright_red"
-            ))
-            return JsonResponse({"error": "Missing amount"}, status=400)
-            
-        if not cardDetails:
-            print(Panel(
-                "[bold red]Missing card details in request[/bold red]",
-                title="❌[ERROR] |chargeCard| Validation Error",
-                border_style="bright_red"
-            ))
-            return JsonResponse({"error": "Missing card details"}, status=400)
-            
-        if not salesperson:
-            print(Panel(
-                "[bold red]Missing salesperson in request[/bold red]",
-                title="❌[ERROR] |chargeCard| Validation Error",
-                border_style="bright_red"
-            ))
-            return JsonResponse({"error": "Missing salesperson"}, status=400)
-        
-        print(Panel(
-            f"[bold yellow]Preparing transaction\nClient ID: {clientID}\nAmount: ${amount}\nSalesperson: {salesperson}[/bold yellow]",
-            title="|chargeCard| Transaction Details",
-            border_style="yellow"
-        ))
-        
-        cardDetails = CardDetails(**cardDetails)
-        
-        print(Panel(
-            "[bold bright_blue]Submitting payment to payment processor[/bold bright_blue]",
-            title="🔎[INFO] |chargeCard| Payment Submission",
-            border_style="bright_blue"
-        ))
 
-        txResult = AuthNetInterface.processCardTransaction(
-            amount=amount, cardDetails=cardDetails, clientID=clientID, salesperson=salesperson
+        # Validate required fields
+        if not clientID or not amount or not cardDetails or not salesperson:
+            print(
+                Panel(
+                    "[bold red]Missing required fields in request[/bold red]",
+                    title="❌[ERROR] |chargeCard| Validation Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        print(
+            Panel(
+                f"[bold yellow]Preparing transaction\nClient ID: {clientID}\nAmount: ${amount}\nSalesperson: {salesperson}[/bold yellow]",
+                title="|chargeCard| Transaction Details",
+                border_style="yellow",
+            )
         )
-        
+
+        cardDetails = CardDetails(**cardDetails)
+        txResult = AuthNetInterface.processCardTransaction(
+            amount=amount,
+            cardDetails=cardDetails,
+            clientID=clientID,
+            salesperson=salesperson,
+        )
+
         # Check if transaction was successful
         if "error" not in txResult or not txResult["error"]:
-            print(Panel(
-                f"[bold green]Transaction processed successfully\nTransaction ID: {txResult.get('transId', 'N/A')}\nAmount: ${amount}[/bold green]",
-                title="❎[SUCCESS] |chargeCard| Payment Success",
-                border_style="bright_green"
-            ))
+            print(
+                Panel(
+                    f"[bold green]Transaction processed successfully\nTransaction ID: {txResult.get('transId', 'N/A')}\nAmount: ${amount}[/bold green]",
+                    title="❎[SUCCESS] |chargeCard| Payment Success",
+                    border_style="bright_green",
+                )
+            )
         else:
-            print(Panel(
-                f"[bold red]Transaction failed\nError: {txResult.get('error', 'Unknown')}\nError text: {txResult.get('errorText', 'No additional details')}[/bold red]",
-                title="❌[ERROR] |chargeCard| Payment Error",
-                border_style="bright_red"
-            ))
+            print(
+                Panel(
+                    f"[bold red]Transaction failed\nError: {txResult.get('error', 'Unknown')}\nError text: {txResult.get('errorText', 'No additional details')}[/bold red]",
+                    title="❌[ERROR] |chargeCard| Payment Error",
+                    border_style="bright_red",
+                )
+            )
 
         return JsonResponse(
             {"success": True, "transactionResult": txResult}, status=200
         )
 
-    except json.JSONDecodeError:
-        print(Panel(
-            "[bold red]Invalid JSON received in request[/bold red]",
-            title="❌[ERROR] |chargeCard| JSON Error",
-            border_style="bright_red"
-        ))
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-        
     except Exception as e:
-        print(Panel(
-            f"[bold red]Unexpected error in chargeCard: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
-            title="❌[ERROR] |chargeCard| System Error",
-            border_style="bright_red"
-        ))
-        return JsonResponse({"error": f"An unexpected error occurred: {str(e)}"}, status=500)
+        print(
+            Panel(
+                f"[bold red]Unexpected error in chargeCard: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |chargeCard| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
+
+
+@csrf_exempt
+def addNote(request) -> JsonResponse:
+    """Add a note to a client profile"""
+    if request.method != "POST":
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
+                title="❌[ERROR] |addNote| Method Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        payload = json.loads(request.body)
+        clientID = payload.get("clientID")
+        salesperson = payload.get("salesperson")
+        note = payload.get("note")
+
+        if not salesperson or not clientID or not note:
+            print(
+                Panel(
+                    "[bold red]Missing fields in request[/bold red]",
+                    title="❌[ERROR] |addNote| Validation Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": "Missing fields"}, status=400)
+
+        client: Client = Client.objects.get(clientID=clientID)
+        clientNote: ClientNote | dict[str, str] = ClientNote.createNote(
+            client=client, note=note, createdBy=salesperson
+        )
+        if not isinstance(clientNote, ClientNote):
+            print(
+                Panel(
+                    "[bold red]Failed to create client note[/bold red]",
+                    title="❌[ERROR] |addNote| Note Creation Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": clientNote["error"]}, status=500)
+        else:
+            return JsonResponse(
+                {"success": True, "clientNote": str(clientNote.note)}, status=200
+            )
+    except Exception as e:
+        print(
+            Panel(
+                f"[bold red]Unexpected error in addNote: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |addNote| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
+
+
+@csrf_exempt
+def getNotes(request) -> JsonResponse:
+    """Get all notes for a client"""
+    if request.method != "GET":
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of GET[/bold red]",
+                title="❌[ERROR] |getNotes| Method Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        payload = json.loads(request.body)
+        clientID = payload.get("clientID")
+        if not clientID:
+            print(
+                Panel(
+                    "[bold red]Missing clientID in request[/bold red]",
+                    title="❌[ERROR] |getNotes| Validation Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": "Missing clientID"}, status=400)
+        client: Client = Client.objects.get(clientID=clientID)
+        notes = ClientNote.objects.all().filter(clientID=client.clientID)
+        return JsonResponse(
+            {
+                "success": True,
+                "notes": [
+                    {
+                        "note": str(note.note),
+                        "createdBy": str(note.createdBy),
+                        "createdAt": str(note.createdAt),
+                    }
+                    for note in notes
+                ],
+            },
+            status=200,
+        )
+    except Exception as e:
+        print(
+            Panel(
+                f"[bold red]Unexpected error in getNotes: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |getNotes| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
 
 
 @csrf_exempt
@@ -163,7 +257,9 @@ def getClient(request) -> JsonResponse:
         if not clientID:
             clients = Client.getClient()
         else:
-            client = Client.getClient(clientID if isinstance(clientID, int) else int(clientID))
+            client = Client.getClient(
+                clientID if isinstance(clientID, int) else int(clientID)
+            )
             print(
                 Panel(
                     "[bold green]Successfully retrieved client[/bold green]",
@@ -171,7 +267,7 @@ def getClient(request) -> JsonResponse:
                     border_style="bright_green",
                 )
             )
-            return JsonResponse( client, status=200)
+            return JsonResponse(client, status=200)
         print(
             Panel(
                 "[bold green]Successfully retrieved client(s)[/bold green]",

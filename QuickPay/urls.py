@@ -21,6 +21,7 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("portal/", include("QuickPay.portal.urls")),
     path("quickpay/", include("PayPortal.urls")),
 ] + debug_toolbar_urls()
 

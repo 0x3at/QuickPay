@@ -844,7 +844,7 @@ class Client(models.Model):
             return {"error": f"System Error: {str(e)}"}
 
 
-class ClientNotes(models.Model):
+class ClientNote(models.Model):
     clientID = models.IntegerField(default=0)
     createdAt = models.DateTimeField(auto_now_add=True)
     createdBy = models.CharField(max_length=128, default="", blank=True)
@@ -853,7 +853,7 @@ class ClientNotes(models.Model):
     @staticmethod
     def createNote(client: Client, createdBy: str, note: str):
         try:
-            noteRec: ClientNotes = ClientNotes(
+            noteRec: ClientNote = ClientNote(
                 clientID=client.clientID, createdBy=createdBy, note=note
             )
             noteRec.save()
@@ -861,7 +861,7 @@ class ClientNotes(models.Model):
         except Exception as e:
             print(
                 Panel(
-                    f"[bold red]Error while creating note for client {client.clientID}: {e}[/bold red]",
+                    renderable=f"[bold red]Error while creating note for client {client.clientID}: {e}[/bold red]",
                     title="❌[ERROR] ‖ClientNote.createNote‖ Note Creation Error",
                     border_style="bright_red",
                 )
