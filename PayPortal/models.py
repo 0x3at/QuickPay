@@ -1,52 +1,60 @@
 import datetime
 import json
-import uuid
-from django.db import models
 import os
-import dotenv
 import traceback
+import uuid
+
+import dotenv
+from authorizenet import apicontractsv1 as adn
+from authorizenet.apicontractsv1 import (
+    creditCardType,
+    merchantAuthenticationType,
+    orderType,
+    paymentType,
+    transactionRequestType,
+)
+from authorizenet.apicontrollers import (
+    createCustomerPaymentProfileController,
+    createCustomerProfileController,
+    createTransactionController,
+)
+from django.db import models
 from rich import print
 from rich.panel import Panel
-from authorizenet import apicontractsv1 as authApi
-from authorizenet.apicontrollers import (
-    createTransactionController,
-    createCustomerProfileController,
-    createCustomerPaymentProfileController,
-)
 
 dotenv.load_dotenv()
 
 
 class CardDetails:
-    def __init__(self, cardNumber, expirationDate, cardCode):
-        self.cardNumber = cardNumber
-        self.expirationDate = expirationDate
-        self.cardCode = cardCode
+    def __init__(self, cardNumber: str, expirationDate: str, cardCode: str):
+        self.cardNumber: str = cardNumber
+        self.expirationDate: str = expirationDate
+        self.cardCode: str = cardCode
 
 
 class CardBillingDetails:
-    def __init__(self, firstName, lastName, address, zipCode):
-        self.firstName = firstName
-        self.lastName = lastName
-        self.address = address
-        self.zipCode = zipCode
+    def __init__(self, firstName: str, lastName: str, address: str, zipCode: str):
+        self.firstName: str = firstName
+        self.lastName: str = lastName
+        self.address: str = address
+        self.zipCode: str = zipCode
 
 
 class AuthNetInterface:
     def __init__(self):
-        self.processor = "AuthorizeNet"
+        self.processor: str = "AuthorizeNet"
         self.sandbox: bool = bool(os.getenv("DEV"))
-        self.env = (
+        self.env: str | None = (
             os.getenv("SANDBOX_AUTH_NET_ENV")
             if self.sandbox
             else os.getenv("PROD_AUTH_NET_ENV")
         )
-        self.apiLoginID = (
+        self.apiLoginID: str | None = (
             os.getenv("SANDBOX_AUTH_NET_ID")
             if self.sandbox
             else os.getenv("PROD_AUTH_NET_ID")
         )
-        self.transactionKey = (
+        self.transactionKey: str | None = (
             os.getenv("SANDBOX_AUTH_NET_TK")
             if self.sandbox
             else os.getenv("PROD_AUTH_NET_TK")
@@ -59,39 +67,39 @@ class AuthNetInterface:
             )
         )
 
-    def getAuthType(self):
-        authType = authApi.merchantAuthenticationType()
-        authType.name = self.apiLoginID
-        authType.transactionKey = self.transactionKey
+    def getAuthStruct(self) -> merchantAuthenticationType:
+        authStruct: adn.merchantAuthenticationType = adn.merchantAuthenticationType()
+        authStruct.name = self.apiLoginID
+        authStruct.transactionKey = self.transactionKey
         print(
             Panel(
                 f"[bold bright_blue]Auth credentials prepared\nLogin ID: {str(self.apiLoginID)[:4]}{'*' * 8}[/bold bright_blue]",
-                title="🔎[INFO] ‖AuthNetInterface.getAuthType‖ Authentication",
+                title="🔎[INFO] ‖AuthNetInterface.getAuthStruct‖ Authentication",
                 border_style="bright_blue",
             )
         )
-        return authType
+        return authStruct
 
     @staticmethod
-    def getCardType(cardDetails: CardDetails):
-        creditCard = authApi.creditCardType()
+    def getCardStruct(cardDetails: CardDetails) -> creditCardType:
+        creditCard: creditCardType = adn.creditCardType()
         creditCard.cardNumber = cardDetails.cardNumber
         creditCard.expirationDate = cardDetails.expirationDate
         creditCard.cardCode = cardDetails.cardCode
         print(
             Panel(
                 f"[bold yellow]Credit card details prepared\nCard ending in: {cardDetails.cardNumber[-4:]}\nExpiration: {cardDetails.expirationDate}[/bold yellow]",
-                title="🔎[INFO] ‖AuthNetInterface.getCardType‖ Card Details",
+                title="🔎[INFO] ‖AuthNetInterface.getCardStruct‖ Card Details",
                 border_style="bright_blue",
             )
         )
         return creditCard
 
     @staticmethod
-    def getOrderType(invoiceID: str):
-        orderType = authApi.orderType()
-        orderType.invoiceNumber = invoiceID
-        orderType.description = "Autocommunications through WholeSale Communications"
+    def getOrderStruct(invoiceID: str) -> orderType:
+        order: orderType = adn.orderType()
+        order.invoiceNumber = invoiceID
+        order.description = "Autocommunications through WholeSale Communications"
         print(
             Panel(
                 f"[bold bright_blue]Order details prepared\nInvoice ID: {invoiceID}\nDescription: {orderType.description}[/bold bright_blue]",
@@ -99,33 +107,33 @@ class AuthNetInterface:
                 border_style="bright_blue",
             )
         )
-        return orderType
+        return order
 
     @staticmethod
-    def getTransactionType(
-        amount: float, creditCard: authApi.creditCardType, order: authApi.orderType
-    ):
-        payment = authApi.paymentType()
+    def getTransactionStruct(
+        amount: float, creditCard: adn.creditCardType, order: adn.orderType
+    ) -> transactionRequestType:
+        payment: paymentType = adn.paymentType()
         payment.creditCard = creditCard
-        txType = authApi.transactionRequestType()
-        txType.transactionType = "authCaptureTransaction"
-        txType.amount = str(amount)
-        txType.currencyCode = "USD"
-        txType.payment = payment
-        txType.order = order
+        txStruct: transactionRequestType = adn.transactionRequestType()
+        txStruct.transactionType = "authCaptureTransaction"
+        txStruct.amount = str(amount)
+        txStruct.currencyCode = "USD"
+        txStruct.payment = payment
+        txStruct.order = order
         print(
             Panel(
-                f"[bold yellow]Transaction request prepared\nType: {txType.transactionType}\nAmount: ${amount} {txType.currencyCode}\nCard ending in: {creditCard.cardNumber[-4:]}[/bold yellow]",
-                title="🔎[INFO] ‖AuthNetInterface.getTransactionType‖ Transaction Setup",
+                f"[bold yellow]Transaction request prepared\nType: {txStruct.transactionType}\nAmount: ${amount} {txStruct.currencyCode}\nCard ending in: {creditCard.cardNumber[-4:]}[/bold yellow]",
+                title="🔎[INFO] ‖AuthNetInterface.getTransactionStruct‖ Transaction Setup",
                 border_style="bright_blue",
             )
         )
-        return txType
+        return txStruct
 
     @staticmethod
     def processCardTransaction(
         amount: float, cardDetails: CardDetails, clientID: int, salesperson: str
-    ):
+    ) -> dict:
         print(
             Panel(
                 f"[bold bright_blue]Processing transaction for {amount} with card {cardDetails.cardNumber} expiring {cardDetails.expirationDate} and cvv {cardDetails.cardCode}[/bold bright_blue]",
@@ -135,8 +143,8 @@ class AuthNetInterface:
         )
 
         # Initialize Transaction Record
-        invoiceID = str(uuid.uuid4())[:16]
-        refID = str(datetime.datetime.now().timestamp())
+        invoiceID: str = str(uuid.uuid4())[:16]
+        refID: str = str(datetime.datetime.now().timestamp())
 
         print(
             Panel(
@@ -146,7 +154,7 @@ class AuthNetInterface:
             )
         )
 
-        tx = Transaction(
+        tx: Transaction = Transaction(
             invoiceID=invoiceID,
             refID=refID,
             amount=amount,
@@ -156,8 +164,8 @@ class AuthNetInterface:
         tx.save()
 
         # Initialize the transaction request
-        creditCard = AuthNetInterface.getCardType(cardDetails)
-        order = AuthNetInterface.getOrderType(invoiceID=invoiceID)
+        creditCard: creditCardType = AuthNetInterface.getCardStruct(cardDetails)
+        order: orderType = AuthNetInterface.getOrderStruct(invoiceID=invoiceID)
 
         print(
             Panel(
@@ -167,10 +175,10 @@ class AuthNetInterface:
             )
         )
 
-        txRequest = authApi.createTransactionRequest()
-        txRequest.merchantAuthentication = AuthNetInterface().getAuthType()
+        txRequest = adn.createTransactionRequest()
+        txRequest.merchantAuthentication = AuthNetInterface().getAuthStruct()
         txRequest.refId = refID
-        txRequest.transactionRequest = AuthNetInterface.getTransactionType(
+        txRequest.transactionRequest = AuthNetInterface.getTransactionStruct(
             amount=amount,  # Must convert float to string
             creditCard=creditCard,
             order=order,
@@ -265,26 +273,26 @@ class AuthNetInterface:
 
             # Extract transaction response fields
             if hasattr(response, "transactionResponse"):
-                tx_resp = response.transactionResponse
+                txResp = response.transactionResponse
 
                 # responseCode = transactionResponse.responseCode
-                tx.responseCode = str(getattr(tx_resp, "responseCode", ""))
+                tx.responseCode = str(getattr(txResp, "responseCode", ""))
                 # authCode = transactionResponse.authCode
-                tx.authCode = getattr(tx_resp, "authCode", "")
+                tx.authCode = getattr(txResp, "authCode", "")
                 # avsResultCode = transactionResponse.avsResultCode
-                tx.avsResultCode = getattr(tx_resp, "avsResultCode", "")
+                tx.avsResultCode = getattr(txResp, "avsResultCode", "")
                 # cvvResultCode = transactionResponse.cvvResultCode
-                tx.cvvResultCode = getattr(tx_resp, "cvvResultCode", "")
+                tx.cvvResultCode = getattr(txResp, "cvvResultCode", "")
                 # cavvResultCode = transactionResponse.cavvResultCode
-                tx.cavvResultCode = getattr(tx_resp, "cavvResultCode", "")
+                tx.cavvResultCode = getattr(txResp, "cavvResultCode", "")
                 # networkTransId = transactionResponse.networkTransId
-                tx.networkTransId = getattr(tx_resp, "networkTransId", "")
+                tx.networkTransId = getattr(txResp, "networkTransId", "")
                 # accountNumber = transactionResponse.accountNumber
-                tx.accountNumber = getattr(tx_resp, "accountNumber", "")
+                tx.accountNumber = getattr(txResp, "accountNumber", "")
                 # accountType = transactionResponse.accountType
-                tx.accountType = getattr(tx_resp, "accountType", "")
+                tx.accountType = getattr(txResp, "accountType", "")
                 # transId = transactionResponse.transId
-                tx.transID = getattr(tx_resp, "transId", "")
+                tx.transID = getattr(txResp, "transId", "")
 
                 if tx.responseCode == "1":
                     print(
@@ -304,22 +312,20 @@ class AuthNetInterface:
                     )
 
                 # Get transaction messages if available
-                if hasattr(tx_resp, "messages") and hasattr(
-                    tx_resp.messages, "message"
-                ):
-                    if len(tx_resp.messages.message) > 0:
-                        tx_msg = tx_resp.messages.message[0]
+                if hasattr(txResp, "messages") and hasattr(txResp.messages, "message"):
+                    if len(txResp.messages.message) > 0:
+                        txMsg = txResp.messages.message[0]
                         # resultNumber = transactionResponse.messages.message[0].code
-                        tx.resultNumber = getattr(tx_msg, "code", "")
+                        tx.resultNumber = getattr(txMsg, "code", "")
                         # resultText (part 2) = transactionResponse.messages.message[0].description
                         # Only set resultText from here if it's not already set from messages.message
                         if not tx.resultText:
-                            tx.resultText = getattr(tx_msg, "description", "")
+                            tx.resultText = getattr(txMsg, "description", "")
 
                 # Get error information if it exists
-                if hasattr(tx_resp, "errors") and hasattr(tx_resp.errors, "error"):
-                    if len(tx_resp.errors.error) > 0:
-                        err = tx_resp.errors.error[0]
+                if hasattr(txResp, "errors") and hasattr(txResp.errors, "error"):
+                    if len(txResp.errors.error) > 0:
+                        err = txResp.errors.error[0]
                         # error = transactionResponse.errors.error[0].errorCode
                         tx.error = getattr(err, "errorCode", "")
                         # errorText = transactionResponse.errors.error[0].errorText
@@ -361,19 +367,19 @@ class AuthNetInterface:
                 if hasattr(response, "transactionResponse") and hasattr(
                     response.transactionResponse, "errors"
                 ):
-                    tx_resp = response.transactionResponse
-                    if hasattr(tx_resp.errors, "error"):
+                    txResp = response.transactionResponse
+                    if hasattr(txResp.errors, "error"):
                         if (
-                            isinstance(tx_resp.errors.error, list)
-                            and len(tx_resp.errors.error) > 0
+                            isinstance(txResp.errors.error, list)
+                            and len(txResp.errors.error) > 0
                         ):
-                            err = tx_resp.errors.error[0]
+                            err = txResp.errors.error[0]
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
                             tx.errorText = getattr(
                                 err, "errorText", "Unknown error occurred"
                             )
-                        elif not isinstance(tx_resp.errors.error, list):
-                            err = tx_resp.errors.error
+                        elif not isinstance(txResp.errors.error, list):
+                            err = txResp.errors.error
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
                             tx.errorText = getattr(
                                 err, "errorText", "Unknown error occurred"
@@ -583,7 +589,6 @@ class AuthNetInterface:
         return result_str
 
 
-# Create your models here.
 class Client(models.Model):
     clientID = models.IntegerField(default=0)
     companyName = models.CharField(max_length=128, default="", blank=True)
@@ -598,7 +603,7 @@ class Client(models.Model):
     salesperson = models.CharField(max_length=128, default="", blank=True)
 
     @staticmethod
-    def getClient(clientID=None):
+    def getClient(clientID: (int | None) = None) -> dict | list:
         """Get all clients with sanitized data for display"""
         try:
             print(
@@ -610,7 +615,7 @@ class Client(models.Model):
             )
 
             if clientID is not None:
-                client = Client.objects.get(clientID=clientID)
+                client: Client = Client.objects.get(clientID=clientID)
                 print(
                     Panel(
                         f"[bold yellow]Found client {client.clientID} in database[/bold yellow]",
@@ -626,24 +631,24 @@ class Client(models.Model):
                     "salesperson": client.salesperson,
                 }
             else:
-                clientList = Client.objects.all()
+                clients = Client.objects.all()
             print(
                 Panel(
-                    f"[bold yellow]Found {len(clientList)} clients in database[/bold yellow]",
+                    f"[bold yellow]Found {len(clients)} clients in database[/bold yellow]",
                     title="🔎[INFO] ‖Client.getClient‖ Query Results",
                     border_style="bright_blue",
                 )
             )
 
-            clientList = [
+            clientList: list = [
                 {
-                    "clientID": client.clientID,
-                    "companyName": client.companyName,
-                    "phone": client.phone,
-                    "email": client.email,
-                    "salesperson": client.salesperson,
+                    "clientID": int(client.clientID),
+                    "companyName": str(client.companyName),
+                    "phone": str(client.phone),
+                    "email": str(client.email),
+                    "salesperson": str(client.salesperson),
                 }
-                for client in clientList
+                for client in clients
             ]
 
             print(
@@ -670,11 +675,11 @@ class Client(models.Model):
 
     @staticmethod
     def createClientProfile(
-        clientID,
-        companyName,
-        phone,
-        salesperson,
-        email="noreply@lifecorp.com",
+        clientID: int,
+        companyName: str,
+        phone: str,
+        salesperson: str,
+        email: str = "noreply@lifecorp.com",
     ):
         print(
             Panel(
@@ -686,7 +691,7 @@ class Client(models.Model):
 
         try:
             # Create a new PaymentProfile record
-            client = Client(
+            client: Client = Client(
                 companyName=companyName,
                 clientID=clientID,
                 phone=phone,
@@ -703,8 +708,10 @@ class Client(models.Model):
             )
 
             # Create customer profile in Authorize.net
-            processorInterface = AuthNetInterface()
-            merchantAuth = processorInterface.getAuthType()
+            processorInterface: AuthNetInterface = AuthNetInterface()
+            merchantAuth: merchantAuthenticationType = (
+                processorInterface.getAuthStruct()
+            )
 
             if merchantAuth is not None:
                 print(
@@ -715,6 +722,7 @@ class Client(models.Model):
                     )
                 )
             else:
+                # Should never happen
                 print(
                     Panel(
                         f"[bold red]❌ Merchant authentication obtained: {merchantAuth is not None}[/bold red]",
@@ -724,7 +732,7 @@ class Client(models.Model):
                 )
 
             # Create customer profile
-            customerProfile = authApi.customerProfileType()
+            customerProfile = adn.customerProfileType()
             customerProfile.merchantCustomerId = (
                 str(clientID) if clientID else companyName
             )
@@ -740,7 +748,7 @@ class Client(models.Model):
             )
 
             # Prepare the request
-            request = authApi.createCustomerProfileRequest()
+            request = adn.createCustomerProfileRequest()
             request.merchantAuthentication = merchantAuth
             request.profile = customerProfile
             # request.validationMode = "liveMode"
@@ -836,6 +844,31 @@ class Client(models.Model):
             return {"error": f"System Error: {str(e)}"}
 
 
+class ClientNotes(models.Model):
+    clientID = models.IntegerField(default=0)
+    createdAt = models.DateTimeField(auto_now_add=True)
+    createdBy = models.CharField(max_length=128, default="", blank=True)
+    note = models.CharField(max_length=248)
+
+    @staticmethod
+    def createNote(client: Client, createdBy: str, note: str):
+        try:
+            noteRec: ClientNotes = ClientNotes(
+                clientID=client.clientID, createdBy=createdBy, note=note
+            )
+            noteRec.save()
+            return noteRec
+        except Exception as e:
+            print(
+                Panel(
+                    f"[bold red]Error while creating note for client {client.clientID}: {e}[/bold red]",
+                    title="❌[ERROR] ‖ClientNote.createNote‖ Note Creation Error",
+                    border_style="bright_red",
+                )
+            )
+            return {"error": f"Note Creation Error: {str(e)}"}
+
+
 class PaymentProfile(models.Model):
     processor = models.CharField(max_length=128, default="AuthorizeNet", blank=True)
     clientID = models.IntegerField(default=0)
@@ -871,7 +904,7 @@ class PaymentProfile(models.Model):
             )
         )
         # Create a new PaymentProfile record
-        profile = PaymentProfile(
+        profile: PaymentProfile = PaymentProfile(
             clientID=client.clientID,
             createdBy=client.salesperson,
             customerProfileID=client.customerProfileID,
@@ -883,12 +916,12 @@ class PaymentProfile(models.Model):
             lastFour=cardDetails.cardNumber[-4:],
         )
         profile.save()
-        processorInterface = AuthNetInterface()
+        processorInterface: AuthNetInterface = AuthNetInterface()
         # Get merchant authentication
-        merchantAuth = processorInterface.getAuthType()
+        merchantAuth: merchantAuthenticationType = processorInterface.getAuthStruct()
 
         # Create credit card
-        creditCard = authApi.creditCardType()
+        creditCard: creditCardType = adn.creditCardType()
         creditCard.cardNumber = cardDetails.cardNumber
         creditCard.expirationDate = cardDetails.expirationDate
         creditCard.cardCode = cardDetails.cardCode
@@ -901,15 +934,15 @@ class PaymentProfile(models.Model):
         )
 
         # Create payment
-        payment = authApi.paymentType()
+        payment: paymentType = adn.paymentType()
         payment.creditCard = creditCard
 
         # Create payment profile
-        paymentProfile = authApi.customerPaymentProfileType()
+        paymentProfile = adn.customerPaymentProfileType()
         paymentProfile.payment = payment
 
         # Billing address
-        billTo = authApi.customerAddressType()
+        billTo = adn.customerAddressType()
         billTo.firstName = billingDetails.firstName
         billTo.lastName = billingDetails.lastName
         billTo.address = billingDetails.address
@@ -917,7 +950,7 @@ class PaymentProfile(models.Model):
         paymentProfile.billTo = billTo
 
         # Create request
-        request = authApi.createCustomerPaymentProfileRequest()
+        request = adn.createCustomerPaymentProfileRequest()
         request.merchantAuthentication = merchantAuth
         request.customerProfileId = client.customerProfileID
         request.paymentProfile = paymentProfile
@@ -977,7 +1010,7 @@ class PaymentProfile(models.Model):
                 and hasattr(response, "messages")
                 and hasattr(response.messages, "message")
             ):
-                error_msg = response.messages.message[0].text
+                error_msg: str = response.messages.message[0].text
                 print(
                     Panel(
                         f"[bold red]Error creating payment profile: {str(error_msg)}[/bold red]",

@@ -1,17 +1,19 @@
-from django.shortcuts import render 
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 import json
+import traceback
+
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from rich import print
 from rich.panel import Panel
+
 from PayPortal.models import (
-    Client,
-    CardDetails,
-    PaymentProfile,
-    CardBillingDetails,
     AuthNetInterface,
+    CardBillingDetails,
+    CardDetails,
+    Client,
+    PaymentProfile,
 )
-import traceback
 
 
 @csrf_exempt
@@ -258,7 +260,7 @@ def createClientProfile(request) -> JsonResponse:
         )
         client = Client.createClientProfile(
             companyName=clientDetails["companyName"],
-            clientID=str(clientDetails.get("clientID")),
+            clientID=int(clientDetails.get("clientID")),
             phone=clientDetails["phone"],
             salesperson=clientDetails["salesperson"],
             email=clientDetails["email"],
