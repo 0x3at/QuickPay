@@ -1185,3 +1185,16 @@ ul {
         grid-template-columns: 1fr;
     }
 }
+
+/* Character counter for notes */
+.character-counter {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+}
+
+#note-content {
+    resize: vertical;
+    min-height: 100px;
+}

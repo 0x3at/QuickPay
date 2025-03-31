@@ -540,6 +540,145 @@ async function submitPaymentMethod() {
     }
 }
 
+// Setup event listeners for the note modal
+function setupNoteModal() {
+    const addNoteBtn = document.querySelector('#notes .card-header .btn');
+    const modal = document.getElementById('add-note-modal');
+    const closeBtn = document.getElementById('close-note-modal');
+    const cancelBtn = document.getElementById('cancel-note');
+    const submitBtn = document.getElementById('submit-note');
+    const form = document.getElementById('add-note-form');
+    const noteContent = document.getElementById('note-content');
+    const charCount = document.getElementById('char-count');
+
+    // Character counter for note textarea
+    if (noteContent) {
+        noteContent.addEventListener('input', function() {
+            const currentLength = this.value.length;
+            charCount.textContent = currentLength;
+            
+            // Change color when approaching limit
+            if (currentLength >= 200) {
+                charCount.style.color = '#ef4444';
+            } else if (currentLength >= 150) {
+                charCount.style.color = '#f59e0b';
+            } else {
+                charCount.style.color = '';
+            }
+        });
+    }
+
+    // Open modal when Add Note button is clicked
+    if (addNoteBtn) {
+        addNoteBtn.addEventListener('click', () => {
+            modal.classList.add('show');
+        });
+    }
+
+    // Close modal functions
+    function closeModal() {
+        modal.classList.remove('show');
+        form.reset();
+        charCount.textContent = '0';
+        charCount.style.color = '';
+    }
+
+    // Close modal when X button is clicked
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    // Close modal when Cancel button is clicked
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Submit form
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitNote);
+    }
+}
+
+// Handle note submission
+async function submitNote() {
+    const author = document.getElementById('note-author').value;
+    const noteText = document.getElementById('note-content').value;
+
+    // Basic validation
+    if (!author || !noteText) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    // Get the client ID from the current client data
+    const clientID = clientData.clientDetails.clientID;
+
+    try {
+        // Show loading state
+        const submitBtn = document.getElementById('submit-note');
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        // Create the note payload
+        const payload = {
+            clientID: clientID,
+            salesperson: author,
+            note: noteText
+        };
+
+        // Send the request to the server
+        const response = await fetch('/quickpay/client/notes/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        // Reset button state
+        submitBtn.innerHTML = 'Add Note';
+        submitBtn.disabled = false;
+
+        // Handle the response
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to add note');
+        }
+
+        // Close the modal
+        document.getElementById('add-note-modal').classList.remove('show');
+        document.getElementById('add-note-form').reset();
+        document.getElementById('char-count').textContent = '0';
+        document.getElementById('char-count').style.color = '';
+        
+        // Reload client data to show the new note
+        clientData = await fetchClientData();
+        if (clientData) {
+            hydrateNotes(clientData.notes);
+        }
+        
+        // Show success message
+        alert('Note added successfully');
+        
+    } catch (error) {
+        console.error('Error adding note:', error);
+        alert('Error adding note: ' + error.message);
+        
+        // Reset button state
+        const submitBtn = document.getElementById('submit-note');
+        submitBtn.innerHTML = 'Add Note';
+        submitBtn.disabled = false;
+    }
+}
+
 // Initialize page
 async function initClientDetailsPage() {
     setupTabSwitching();
@@ -565,6 +704,7 @@ async function initClientDetailsPage() {
     // Setup form event listeners
     setupPaymentFormListeners();
     setupPaymentMethodModal();
+    setupNoteModal();
 }
 
 // Setup payment form listeners
