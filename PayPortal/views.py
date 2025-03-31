@@ -14,7 +14,79 @@ from PayPortal.models import (
     Client,
     ClientNote,
     PaymentProfile,
+    Transaction,
 )
+
+
+@csrf_exempt
+def dashboard(request):
+    return render(request, "payportal/dashboard_clients.html")
+
+@csrf_exempt
+def payment(request):
+    return render(request, "payportal/payment.html")
+
+@csrf_exempt
+def clientDetails(request):
+    return render(request, "payportal/client_details.html")
+
+@csrf_exempt
+def clientProfile(request):
+    if request.method != "GET":
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of GET[/bold red]",
+                title="❌[ERROR] |getClient| Method Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        print(
+            Panel(
+                "[bold bright_blue]Processing request to get client(s)[/bold bright_blue]",
+                title="🔎[INFO] |getClient| Client List Request",
+                border_style="bright_blue",
+            )
+        )
+        try:
+            payload = json.loads(request.body)
+            clientID = payload.get("clientID")
+        except json.JSONDecodeError:
+            print(
+                Panel(
+                    "[bold red]No payload provided[/bold red]",
+                    title="🔎[INFO] |getClient| No Payload",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+        client = Client.objects.get(clientID=clientID)
+        paymentProfiles = PaymentProfile.objects.filter(clientID=clientID).all()
+        notes = ClientNote.objects.filter(clientID=clientID).all()
+        transactions = Transaction.objects.filter(clientID=clientID).all()
+        clientProfile = {
+            "clientDetails": client.getClientDetails(),
+            "paymentProfiles": [paymentProfile.getPaymentProfileDetails() for paymentProfile in paymentProfiles],
+            "notes": [note.getClientNoteDetails() for note in notes],
+            "transactions": [transaction.getResults() for transaction in transactions],
+        }
+        return JsonResponse(clientProfile, status=200)
+
+    except Exception as e:
+        print(
+            Panel(
+                f"[bold red]Unexpected error in clientProfile: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |clientProfile| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
+
 
 
 @csrf_exempt

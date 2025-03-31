@@ -602,6 +602,17 @@ class Client(models.Model):
     defaultPaymentID = models.CharField(max_length=128, default="", blank=True)
     salesperson = models.CharField(max_length=128, default="", blank=True)
 
+    def getClientDetails(self) -> dict:
+        defaultPayment = PaymentProfile.objects.get(paymentProfileID=self.defaultPaymentID) if self.defaultPaymentID else None
+        return {
+            "clientID": self.clientID,
+            "companyName": self.companyName,
+            "phone": self.phone,
+            "email": self.email,
+            "salesperson": self.salesperson,
+            "defaultPayment": defaultPayment.getPaymentProfileDetails() if defaultPayment else {},
+        }
+    
     @staticmethod
     def getClient(clientID: (int | None) = None) -> dict | list:
         """Get all clients with sanitized data for display"""
@@ -645,6 +656,7 @@ class Client(models.Model):
                     "clientID": int(client.clientID),
                     "companyName": str(client.companyName),
                     "phone": str(client.phone),
+                    "createdAt": str(client.createdAt),
                     "email": str(client.email),
                     "salesperson": str(client.salesperson),
                 }
@@ -850,6 +862,14 @@ class ClientNote(models.Model):
     createdBy = models.CharField(max_length=128, default="", blank=True)
     note = models.CharField(max_length=248)
 
+    def getClientNoteDetails(self) -> dict:
+        return {
+            "clientID": self.clientID,
+            "createdAt": self.createdAt,
+            "createdBy": self.createdBy,
+            "note": self.note,
+        }
+        
     @staticmethod
     def createNote(client: Client, createdBy: str, note: str):
         try:
@@ -890,6 +910,25 @@ class PaymentProfile(models.Model):
     lastFour = models.CharField(max_length=128, default="", blank=True)
     isChildBillable = models.BooleanField(default=False)
     customerType = models.CharField(max_length=128, default="business", blank=True)
+
+    def getPaymentProfileDetails(self) -> dict:
+        return {
+            "processor": self.processor,
+            "clientID": self.clientID,
+            "createdBy": self.createdBy,
+            "status": self.status,
+            "createdAt": self.createdAt,
+            "billedFrom": self.billedFrom,
+            "customerProfileID": self.customerProfileID,
+            "paymentProfileID": self.paymentProfileID,
+            "firstName": self.firstName,
+            "lastName": self.lastName,
+            "email": self.email,
+            "streetAddress": self.streetAddress,
+            "zipCode": self.zipCode,
+            "cardType": self.cardType,
+            "lastFour": self.lastFour,
+        }    
 
     @staticmethod
     def addPaymentMethod(

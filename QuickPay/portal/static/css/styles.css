@@ -1,5 +1,7 @@
 :root {
   --primary: #0070f3;
+  --primary-foreground: #ffffff;
+  --secondary: #60aaff5c;
   --success: #0070f3;
   --error: #ff4d4f;
   --background: #ffffff;
