@@ -32,16 +32,6 @@ def clientDetails(request):
 
 @csrf_exempt
 def clientProfile(request):
-    if request.method != "GET":
-        print(
-            Panel(
-                f"[bold red]Received invalid {request.method} request instead of GET[/bold red]",
-                title="❌[ERROR] |getClient| Method Error",
-                border_style="bright_red",
-            )
-        )
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
     try:
         print(
             Panel(
@@ -66,12 +56,12 @@ def clientProfile(request):
         client = Client.objects.get(clientID=clientID)
         paymentProfiles = PaymentProfile.objects.filter(clientID=clientID).all()
         notes = ClientNote.objects.filter(clientID=clientID).all()
-        transactions = Transaction.objects.filter(clientID=clientID).all()
+        transactions = Transaction.objects.filter(clientID=clientID).all().order_by('-created_at')
         clientProfile = {
             "clientDetails": client.getClientDetails(),
             "paymentProfiles": [paymentProfile.getPaymentProfileDetails() for paymentProfile in paymentProfiles],
             "notes": [note.getClientNoteDetails() for note in notes],
-            "transactions": [transaction.getResults() for transaction in transactions],
+            "transactions": [transaction.getResults() for transaction in transactions.reverse()],
         }
         return JsonResponse(clientProfile, status=200)
 

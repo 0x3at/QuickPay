@@ -611,6 +611,7 @@ class Client(models.Model):
             "email": self.email,
             "salesperson": self.salesperson,
             "defaultPayment": defaultPayment.getPaymentProfileDetails() if defaultPayment else {},
+            "createdAt": self.createdAt,
         }
     
     @staticmethod

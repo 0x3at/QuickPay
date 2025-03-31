@@ -118,8 +118,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   // Handler functions for the action buttons
   function viewClient(clientId) {
-    console.log('View client:', clientId);
-    // Implement view client functionality
+    console.log('(updated)View client:', clientId);
+    window.location.assign(`/quickpay/client/details?id=${clientId}`);
   }
   
   function editClient(clientId) {
