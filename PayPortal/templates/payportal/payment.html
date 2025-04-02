@@ -5,7 +5,18 @@ Quick Payment
 {% endblock %}
 {%block header_actions%}
 {%endblock %}
+{%block styles%}
+<link rel="stylesheet" href="{% static 'payportal/css/payment.css' %}">
+{% endblock %}
 {% block content %}
+<!-- Add toast notification markup -->
+<div id="toast-notification" class="toast-notification">
+  <div class="toast-content success">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toast-message">Operation successful!</span>
+  </div>
+</div>
+
 <div class="payment-container">
   <form id="payment-form">
     <!-- Client Details Panel -->
@@ -292,36 +303,6 @@ Quick Payment
   </div>
 </div>
 {% endblock %}
-
-{% block styles %}
-<style>
-  .payment-container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-
-  #payment-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-  }
-
-  .client-panel,
-  .payment-panel {
-    height: fit-content;
-  }
-
-  /* Responsive layout */
-  @media (max-width: 1024px) {
-    #payment-form {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-  }
-</style>
-{% endblock %}
-
 {% block extra_scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="{% static 'payportal/js/payment.js' %}"></script>

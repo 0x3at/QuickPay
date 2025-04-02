@@ -120,13 +120,86 @@ document.addEventListener("DOMContentLoaded", function () {
         return isValid;
     }
 
+    // Add these toast functions at the top of the file
+    function showToast(message, duration = 3000) {
+        console.log("Showing toast with message:", message);
+
+        const toast = document.getElementById('toast-notification');
+        if (!toast) {
+            console.error("Toast element not found!");
+            alert(message); // Fallback to alert if toast element not found
+            return;
+        }
+
+        const toastContent = toast.querySelector('.toast-content');
+        const toastMessage = document.getElementById('toast-message');
+
+        // Set success style
+        toastContent.classList.remove('error');
+        toastContent.classList.add('success');
+        toastContent.querySelector('i').className = 'fa-solid fa-check-circle';
+
+        // Set message
+        toastMessage.textContent = message;
+
+        // Show toast
+        toast.classList.add('show');
+
+        // Hide after duration
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, duration);
+    }
+
+    function showErrorToast(message) {
+        console.log("Showing error toast with message:", message);
+
+        const toast = document.getElementById('toast-notification');
+        if (!toast) {
+            console.error("Toast element not found!");
+            alert(message); // Fallback to alert if toast element not found
+            return;
+        }
+
+        const toastContent = toast.querySelector('.toast-content');
+        const toastMessage = document.getElementById('toast-message');
+
+        // Set error style
+        toastContent.classList.remove('success');
+        toastContent.classList.add('error');
+        toastContent.querySelector('i').className = 'fa-solid fa-exclamation-circle';
+
+        // Set message
+        toastMessage.textContent = message;
+
+        // Show toast
+        toast.classList.add('show');
+
+        // Hide after duration
+        setTimeout(() => {
+            toast.classList.remove('show');
+
+            // Reset to success style after hiding
+            setTimeout(() => {
+                toastContent.classList.remove('error');
+                toastContent.classList.add('success');
+                toastContent.querySelector('i').className = 'fa-solid fa-check-circle';
+            }, 300);
+        }, 4000);
+    }
+
+    // Then update the showSuccess and showError functions to use the toast system
+    function showSuccess(message) {
+        showToast(message);
+    }
+
+    function showError(message) {
+        showErrorToast(message);
+    }
+
     // Handle form submission
     form.addEventListener("submit", async function (e) {
         e.preventDefault();
-
-        // Hide previous results
-        resultContainer.className = "result";
-        resultContainer.style.display = "none";
 
         // Validate form
         if (!validateForm()) {
@@ -174,13 +247,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Check for success in the response structure
             if (data.success && data.transactionResult.result === "Success") {
-                showSuccess("Payment processed successfully!");
-                // Show receipt popup with transaction details
+                showToast("Payment processed successfully!");
                 showReceiptPopup(data.transactionResult);
-                // Reset form on success
                 form.reset();
             } else {
-                showError(
+                showErrorToast(
                     data.transactionResult?.errorText || 
                     data.transactionResult?.error || 
                     "Payment processing failed. Please try again."
@@ -190,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Handle network errors
             submitButton.classList.remove("loading");
             submitButton.disabled = false;
-            showError("Network error. Please check your connection and try again.");
+            showErrorToast("Network error. Please check your connection and try again.");
             console.error("Error:", error);
         }
     });
@@ -210,33 +281,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
         return cookieValue;
-    }
-
-    // Show success message
-    function showSuccess(message) {
-        resultContainer.className = "result success";
-        resultIcon.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <path class="checkmark" d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      `;
-        resultMessage.textContent = message;
-        resultContainer.style.display = "flex";
-    }
-
-    // Show error message
-    function showError(message) {
-        resultContainer.className = "result error";
-        resultIcon.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <path d="M15 9L9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M9 9L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      `;
-        resultMessage.textContent = message;
-        resultContainer.style.display = "flex";
     }
 
     // Show receipt popup with transaction details
@@ -398,4 +442,21 @@ document.addEventListener("DOMContentLoaded", function () {
             doc.save(`receipt_${timestamp}.pdf`);
         };
     }
+
+    // Add this at the end of the DOMContentLoaded event handler
+    // Hide any static toast messages on page load
+    function hideStaticToastMessage() {
+        console.log("Hiding static toast message");
+        const toast = document.getElementById('toast-notification');
+        if (toast) {
+            toast.classList.remove('show');
+            const toastMessage = document.getElementById('toast-message');
+            if (toastMessage) {
+                toastMessage.textContent = '';
+            }
+        }
+    }
+
+    // Call hideStaticToastMessage when page loads
+    hideStaticToastMessage();
 });

@@ -106,7 +106,7 @@ def chargeCard(request) -> JsonResponse:
         amount = payload.get("amount")
         cardDetails = payload.get("cardDetails")
         salesperson = payload.get("salesperson")
-
+        
         # Validate required fields
         if not clientID or not amount or not cardDetails or not salesperson:
             print(

@@ -709,7 +709,7 @@ class AuthNetInterface:
             # Extract main messages fields
             if hasattr(response, "messages"):
                 # resultStatus = messages.resultCode
-                tx.resultStatus = getattr(response.messages, "resultCode", "")
+                tx.resultStatus = getattr(response.messages, "resultCode", "Not Available")
 
                 # Print response in nice format
                 if tx.resultStatus == "Ok":
@@ -736,9 +736,9 @@ class AuthNetInterface:
                 ):
                     msg = response.messages.message[0]
                     # resultCode = messages.message[0].code
-                    tx.resultCode = getattr(msg, "code", "")
+                    tx.resultCode = getattr(msg, "code", "Not Available")
                     # resultText (part 1) = messages.message[0].text
-                    tx.resultText = getattr(msg, "text", "")
+                    tx.resultText = getattr(msg, "text", "Not Available")
 
                     if tx.resultStatus == "Ok":
                         print(
@@ -762,23 +762,23 @@ class AuthNetInterface:
                 txResp = response.transactionResponse
 
                 # responseCode = transactionResponse.responseCode
-                tx.responseCode = str(getattr(txResp, "responseCode", ""))
+                tx.responseCode = str(getattr(txResp, "responseCode", "Not Available"))
                 # authCode = transactionResponse.authCode
-                tx.authCode = getattr(txResp, "authCode", "")
+                tx.authCode = getattr(txResp, "authCode", "Not Available")
                 # avsResultCode = transactionResponse.avsResultCode
-                tx.avsResultCode = getattr(txResp, "avsResultCode", "")
+                tx.avsResultCode = getattr(txResp, "avsResultCode", "Not Available")
                 # cvvResultCode = transactionResponse.cvvResultCode
-                tx.cvvResultCode = getattr(txResp, "cvvResultCode", "")
+                tx.cvvResultCode = getattr(txResp, "cvvResultCode", "Not Available")
                 # cavvResultCode = transactionResponse.cavvResultCode
-                tx.cavvResultCode = getattr(txResp, "cavvResultCode", "")
+                tx.cavvResultCode = getattr(txResp, "cavvResultCode", "Not Available")
                 # networkTransId = transactionResponse.networkTransId
-                tx.networkTransId = getattr(txResp, "networkTransId", "")
+                tx.networkTransId = getattr(txResp, "networkTransId", "Not Available")
                 # accountNumber = transactionResponse.accountNumber
-                tx.accountNumber = getattr(txResp, "accountNumber", "")
+                tx.accountNumber = getattr(txResp, "accountNumber", "Not Available")
                 # accountType = transactionResponse.accountType
-                tx.accountType = getattr(txResp, "accountType", "")
+                tx.accountType = getattr(txResp, "accountType", "Not Available")
                 # transId = transactionResponse.transId
-                tx.transID = getattr(txResp, "transId", "")
+                tx.transID = getattr(txResp, "transId", "Not Available")
 
                 if tx.responseCode == "1":
                     print(
@@ -802,20 +802,20 @@ class AuthNetInterface:
                     if len(txResp.messages.message) > 0:
                         txMsg = txResp.messages.message[0]
                         # resultNumber = transactionResponse.messages.message[0].code
-                        tx.resultNumber = getattr(txMsg, "code", "")
+                        tx.resultNumber = getattr(txMsg, "code", "Not Available")
                         # resultText (part 2) = transactionResponse.messages.message[0].description
                         # Only set resultText from here if it's not already set from messages.message
                         if not tx.resultText:
-                            tx.resultText = getattr(txMsg, "description", "")
+                            tx.resultText = getattr(txMsg, "description", "Not Available")
 
                 # Get error information if it exists
                 if hasattr(txResp, "errors") and hasattr(txResp.errors, "error"):
                     if len(txResp.errors.error) > 0:
                         err = txResp.errors.error[0]
                         # error = transactionResponse.errors.error[0].errorCode
-                        tx.error = getattr(err, "errorCode", "")
+                        tx.error = getattr(err, "errorCode", "Not Available")
                         # errorText = transactionResponse.errors.error[0].errorText
-                        tx.errorText = getattr(err, "errorText", "")
+                        tx.errorText = getattr(err, "errorText", "Not Available")
 
                         print(
                             Panel(
@@ -840,6 +840,8 @@ class AuthNetInterface:
                 return tx.getResults()
             else:
                 tx.result = "Failed"
+                # Add this line to ensure resultText has a default value
+                tx.resultText = tx.resultText or "Transaction Failed"
 
                 print(
                     Panel(
@@ -861,15 +863,13 @@ class AuthNetInterface:
                         ):
                             err = txResp.errors.error[0]
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
-                            tx.errorText = getattr(
-                                err, "errorText", "Unknown error occurred"
-                            )
+                            # Update resultText here as well
+                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
                         elif not isinstance(txResp.errors.error, list):
                             err = txResp.errors.error
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
-                            tx.errorText = getattr(
-                                err, "errorText", "Unknown error occurred"
-                            )
+                            # Update resultText here as well
+                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
 
                 # If we don't have specific error info from transaction, use general errors
                 if (
@@ -880,7 +880,8 @@ class AuthNetInterface:
                     if len(response.messages.message) > 0:
                         msg = response.messages.message[0]
                         tx.error = getattr(msg, "code", "UNKNOWN_ERROR")
-                        tx.errorText = getattr(msg, "text", "Unknown error occurred")
+                        # Update resultText here as well
+                        tx.resultText = getattr(msg, "text", "Unknown error occurred")
 
             # Save all extracted data
             tx.save()
@@ -1078,7 +1079,7 @@ class AuthNetInterface:
     def chargeProfilePayment(
         paymentProfile: PaymentProfile,
         client: Client,
-        amount:str,
+        amount: str,
         invoiceID=None,
         description=None,
     ):
@@ -1192,9 +1193,9 @@ class AuthNetInterface:
                 ):
                     msg = response.messages.message[0]
                     # resultCode = messages.message[0].code
-                    tx.resultCode = getattr(msg, "code", "")
+                    tx.resultCode = getattr(msg, "code", "Not Available")
                     # resultText (part 1) = messages.message[0].text
-                    tx.resultText = getattr(msg, "text", "")
+                    tx.resultText = getattr(msg, "text", "Not Available")
 
                     if tx.resultStatus == "Ok":
                         print(
@@ -1218,23 +1219,23 @@ class AuthNetInterface:
                 txResp = response.transactionResponse
 
                 # responseCode = transactionResponse.responseCode
-                tx.responseCode = str(getattr(txResp, "responseCode", ""))
+                tx.responseCode = str(getattr(txResp, "responseCode", "Not Available"))
                 # authCode = transactionResponse.authCode
-                tx.authCode = getattr(txResp, "authCode", "")
+                tx.authCode = getattr(txResp, "authCode", "Not Available")
                 # avsResultCode = transactionResponse.avsResultCode
-                tx.avsResultCode = getattr(txResp, "avsResultCode", "")
+                tx.avsResultCode = getattr(txResp, "avsResultCode", "Not Available")
                 # cvvResultCode = transactionResponse.cvvResultCode
-                tx.cvvResultCode = getattr(txResp, "cvvResultCode", "")
+                tx.cvvResultCode = getattr(txResp, "cvvResultCode", "Not Available")
                 # cavvResultCode = transactionResponse.cavvResultCode
-                tx.cavvResultCode = getattr(txResp, "cavvResultCode", "")
+                tx.cavvResultCode = getattr(txResp, "cavvResultCode", "Not Available")
                 # networkTransId = transactionResponse.networkTransId
-                tx.networkTransId = getattr(txResp, "networkTransId", "")
+                tx.networkTransId = getattr(txResp, "networkTransId", "Not Available")
                 # accountNumber = transactionResponse.accountNumber
-                tx.accountNumber = getattr(txResp, "accountNumber", "")
+                tx.accountNumber = getattr(txResp, "accountNumber", "Not Available")
                 # accountType = transactionResponse.accountType
-                tx.accountType = getattr(txResp, "accountType", "")
+                tx.accountType = getattr(txResp, "accountType", "Not Available")
                 # transId = transactionResponse.transId
-                tx.transID = getattr(txResp, "transId", "")
+                tx.transID = getattr(txResp, "transId", "Not Available")
 
                 if tx.responseCode == "1":
                     print(
@@ -1296,6 +1297,8 @@ class AuthNetInterface:
                 return tx.getResults()
             else:
                 tx.result = "Failed"
+                # Add this line to ensure resultText has a default value
+                tx.resultText = tx.resultText or "Transaction declined"
 
                 print(
                     Panel(
@@ -1317,15 +1320,13 @@ class AuthNetInterface:
                         ):
                             err = txResp.errors.error[0]
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
-                            tx.errorText = getattr(
-                                err, "errorText", "Unknown error occurred"
-                            )
+                            # Update resultText here as well
+                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
                         elif not isinstance(txResp.errors.error, list):
                             err = txResp.errors.error
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
-                            tx.errorText = getattr(
-                                err, "errorText", "Unknown error occurred"
-                            )
+                            # Update resultText here as well
+                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
 
                 # If we don't have specific error info from transaction, use general errors
                 if (
@@ -1336,7 +1337,8 @@ class AuthNetInterface:
                     if len(response.messages.message) > 0:
                         msg = response.messages.message[0]
                         tx.error = getattr(msg, "code", "UNKNOWN_ERROR")
-                        tx.errorText = getattr(msg, "text", "Unknown error occurred")
+                        # Update resultText here as well
+                        tx.resultText = getattr(msg, "text", "Unknown error occurred")
 
             # Save all extracted data
             tx.save()
