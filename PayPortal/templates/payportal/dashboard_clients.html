@@ -1,10 +1,66 @@
-{% extends 'payportal/base.html' %} {% block title %}Clients - QuickPay{% endblock %}
-{% block page_title %}Client Profiles{% endblock %} {% block header_actions %}
-<a href="/createClient" class="btn btn-primary">
+{% extends 'payportal/base.html' %} 
+{% load static %} 
+{% block title %}
+Clients - QuickPay
+{% endblock %}
+{% block page_title %}
+Client Profiles
+{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{% static 'payportal/css/dashboard_clients.css' %}">
+{% endblock %}
+{% block header_actions %}
+<button class="btn btn-primary">
   <i class="fa-solid fa-plus-circle"></i>
   New Client
-</a>
-{% endblock %} {% block content %}
+</button>
+
+<div id="create-client-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>New Client</h2>
+      <button class="close-modal" id="close-client-modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="create-client-form">
+        <div class="form-group">
+          <label for="client-id">Client ID</label>
+          <input type="number" id="client-id" required>
+        </div>
+        <div class="form-group">
+          <label for="company-name">Company Name</label>
+          <input type="text" id="company-name" required>
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" pattern="[0-9]{10}" placeholder="8175551234" required>
+        </div>
+        <div class="form-group">
+          <label for="salesperson">Salesperson</label>
+          <input type="text" id="salesperson" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div id="client-form-error" class="form-error-message" style="display: none;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button id="cancel-client" class="btn btn-outline">Cancel</button>
+      <button id="submit-client" class="btn btn-primary">Create Client</button>
+    </div>
+  </div>
+</div>
+{% endblock %} 
+{% block content %}
+<div id="toast-notification" class="toast-notification">
+  <div class="toast-content success">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toast-message">Client created successfully!</span>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-content" style="width: 100%">
     <div class="table-container" style="width: 100%">
@@ -26,8 +82,7 @@
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_scripts %}
-<script>
-  // Any additional JavaScript specific to the clients page
-</script>
+{% endblock %} 
+{% block extra_scripts %}
+<script src="{% static 'payportal/js/dashboard_clients.js' %}"></script>
 {% endblock %}

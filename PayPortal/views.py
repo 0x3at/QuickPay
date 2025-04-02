@@ -168,6 +168,71 @@ def chargeCard(request) -> JsonResponse:
             {"error": f"An unexpected error occurred: {str(e)}"}, status=500
         )
 
+@csrf_exempt
+def chargeProfile(request) -> JsonResponse:
+    """Charge a profile"""
+    if request.method != "POST":
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
+                title="❌[ERROR] |chargeProfile| Method Error", 
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
+    try:
+        payload = json.loads(request.body)
+        clientID = payload.get("clientID")
+        paymentProfileID = payload.get("paymentProfileID")
+        amount = payload.get("amount")
+        print(
+            Panel(
+                f"[bold yellow]Charging profile\nClient ID: {clientID}\nPayment Profile ID: {paymentProfileID}\nAmount: ${amount}[/bold yellow]",
+                title="|chargeProfile| Transaction Details",
+                border_style="yellow",
+            )
+        )
+        client = Client.objects.get(clientID=clientID)
+        paymentProfile = PaymentProfile.objects.get(paymentProfileID=str(paymentProfileID))
+        txResult = AuthNetInterface.chargeProfilePayment(
+            paymentProfile=paymentProfile,
+            client=client,
+            amount=amount,
+        )
+        if "error" not in txResult or not txResult["error"]:
+            print(
+                Panel(
+                    f"[bold green]Transaction processed successfully\nTransaction ID: {txResult.get('transId', 'N/A')}\nAmount: ${amount}[/bold green]",
+                    title="❎[SUCCESS] |chargeProfile| Payment Success",
+                    border_style="bright_green",
+                )
+            )
+            return JsonResponse(
+                {"success": True, "transactionResult": txResult}, status=200
+            )
+        else:
+            print(
+                Panel(
+                    f"[bold red]Transaction failed\nError: {txResult.get('error', 'Unknown')}\nError text: {txResult.get('errorText', 'No additional details')}[/bold red]",
+                    title="❌[ERROR] |chargeProfile| Payment Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse(
+                {"success": False, "transactionResult": txResult}, status=500
+            )
+    except Exception as e:
+        print(
+            Panel(
+                f"[bold red]Unexpected error in chargeProfile: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |chargeProfile| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
 
 @csrf_exempt
 def addNote(request) -> JsonResponse:
@@ -185,7 +250,7 @@ def addNote(request) -> JsonResponse:
     try:
         payload = json.loads(request.body)
         clientID = payload.get("clientID")
-        salesperson = payload.get("salesperson")
+        salesperson = payload.get("createdBy")
         note = payload.get("note")
 
         if not salesperson or not clientID or not note:

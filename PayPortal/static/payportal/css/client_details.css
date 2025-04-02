@@ -1198,3 +1198,68 @@ ul {
     resize: vertical;
     min-height: 100px;
 }
+
+/* Toast Notification - simplified version */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    transform: translateX(150%);
+    transition: transform 0.3s ease-in-out;
+    pointer-events: none;
+    /* Remove aggressive styling */
+}
+
+.toast-notification.show {
+    transform: translateX(0);
+    pointer-events: auto;
+    display: block;
+    /* Remove aggressive styling */
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 10px;
+    /* display: none; */
+}
+
+.toast-content.success {
+    border-left: 4px solid var(--success);
+
+}
+
+.toast-content.error {
+    border-left: 4px solid var(--error);
+}
+
+.toast-content i {
+    font-size: 20px;
+    margin-right: 12px;
+    display: none;
+    opacity: 0;
+}
+
+.toast-content.success i {
+    color: var(--success);
+}
+
+.toast-content.error i {
+    color: var(--error);
+}
+
+/* Form error message */
+.form-error-message {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid var(--error);
+    color: var(--error);
+    border-radius: 4px;
+    font-size: 14px;
+}

@@ -9,6 +9,14 @@ Client Details
 <link rel="stylesheet" href="{% static 'payportal/css/client_details.css' %}"/>
 {%endblock %}
 {% block content %}
+      <!-- Toast notification for success -->
+      <div id="toast-notification" class="toast-notification">
+        <div class="toast-content success">
+          <i class="fa-solid fa-check-circle"></i>
+          <span id="toast-message">Operation successful!</span>
+        </div>
+      </div>
+      
       <div class="content-container">
         <!-- Client Profile Card -->
         <div class="header-cards-container">
@@ -227,106 +235,71 @@ Client Details
 
             <!-- Payment Methods Tab -->
             <div class="tab-pane" id="payment-methods">
-              <div class="payment-methods-container">
-                <!-- Saved Payment Methods -->
-                <div class="card">
-                  <div class="card-header">
-                    <h3>Saved Payment Methods</h3>
-                    <button class="btn btn-outline btn-sm">
-                      <i class="fa-solid fa-plus"></i> Add Payment Method
-                    </button>
-                  </div>
-                  <div class="card-content">
-                    <div class="payment-methods-list">
-                      <div class="payment-method-card">
-                        <div class="payment-method-icon visa">
-                          <i class="fa-brands fa-cc-visa"></i>
-                        </div>
-                        <div class="payment-method-details">
-                          <div class="payment-method-name"></div>
-                          <div class="payment-method-info"></div>
-                          <div class="payment-method-info"></div>
-                        </div>
-                        <div class="payment-method-status">
-                          <span class="badge success">Default</span>
-                        </div>
-                        <div class="payment-method-actions">
-                          <button class="btn btn-sm btn-outline">Edit</button>
-                          <button class="btn btn-sm btn-outline btn-danger">Remove</button>
-                        </div>
+              <!-- Saved Payment Methods -->
+              <div class="card">
+                <div class="card-header">
+                  <h3>Saved Payment Methods</h3>
+                  <button class="btn btn-outline btn-sm">
+                    <i class="fa-solid fa-plus"></i> Add Payment Method
+                  </button>
+                </div>
+                <div class="card-content">
+                  <div class="payment-methods-list">
+                    <div class="payment-method-card">
+                      <div class="payment-method-icon visa">
+                        <i class="fa-brands fa-cc-visa"></i>
                       </div>
-
-                      <div class="payment-method-card">
-                        <div class="payment-method-icon mastercard">
-                          <i class="fa-brands fa-cc-mastercard"></i>
-                        </div>
-                        <div class="payment-method-details">
-                          <div class="payment-method-name"></div>
-                          <div class="payment-method-info"></div>
-                          <div class="payment-method-info"></div>
-                        </div>
-                        <div class="payment-method-status">
-                          <!-- No badge for non-default -->
-                        </div>
-                        <div class="payment-method-actions">
-                          <button class="btn btn-sm btn-outline">Set Default</button>
-                          <button class="btn btn-sm btn-outline">Edit</button>
-                          <button class="btn btn-sm btn-outline btn-danger">Remove</button>
-                        </div>
+                      <div class="payment-method-details">
+                        <div class="payment-method-name"></div>
+                        <div class="payment-method-info"></div>
+                        <div class="payment-method-info"></div>
                       </div>
-
-                      <div class="payment-method-card">
-                        <div class="payment-method-icon amex">
-                          <i class="fa-brands fa-cc-amex"></i>
-                        </div>
-                        <div class="payment-method-details">
-                          <div class="payment-method-name"></div>
-                          <div class="payment-method-info"></div>
-                          <div class="payment-method-info"></div>
-                        </div>
-                        <div class="payment-method-status">
-                          <!-- No badge for non-default -->
-                        </div>
-                        <div class="payment-method-actions">
-                          <button class="btn btn-sm btn-outline">Set Default</button>
-                          <button class="btn btn-sm btn-outline">Edit</button>
-                          <button class="btn btn-sm btn-outline btn-danger">Remove</button>
-                        </div>
+                      <div class="payment-method-status">
+                        <span class="badge success">Default</span>
+                      </div>
+                      <div class="payment-method-actions">
+                        <button class="btn btn-sm btn-outline">Edit</button>
+                        <button class="btn btn-sm btn-outline btn-danger">Remove</button>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <!-- Process New Charge -->
-                <div class="card">
-                  <div class="card-header">
-                    <h3>Process New Charge</h3>
-                  </div>
-                  <div class="card-content">
-                    <form id="quick-charge-form" class="quick-charge-form">
-                      <div class="form-group">
-                        <label for="payment-method">Payment Method</label>
-                        <select id="payment-method" name="payment-method" class="form-select">
-                          <option value="visa-4242"></option>
-                          <option value="mc-5678"></option>
-                          <option value="amex-9876"></option>
-                        </select>
+                    <div class="payment-method-card">
+                      <div class="payment-method-icon mastercard">
+                        <i class="fa-brands fa-cc-mastercard"></i>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="amount">Amount ($)</label>
-                        <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" min="0.01" required>
+                      <div class="payment-method-details">
+                        <div class="payment-method-name"></div>
+                        <div class="payment-method-info"></div>
+                        <div class="payment-method-info"></div>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="salesperson">Salesperson</label>
-                        <input type="text" id="salesperson" name="salesperson" placeholder="John Doe" required>
+                      <div class="payment-method-status">
+                        <!-- No badge for non-default -->
                       </div>
-                      
-                      <div class="form-actions">
-                        <button type="submit" class="btn btn-primary btn-block">Process Charge</button>
+                      <div class="payment-method-actions">
+                        <button class="btn btn-sm btn-outline">Set Default</button>
+                        <button class="btn btn-sm btn-outline">Edit</button>
+                        <button class="btn btn-sm btn-outline btn-danger">Remove</button>
                       </div>
-                    </form>
+                    </div>
+
+                    <div class="payment-method-card">
+                      <div class="payment-method-icon amex">
+                        <i class="fa-brands fa-cc-amex"></i>
+                      </div>
+                      <div class="payment-method-details">
+                        <div class="payment-method-name"></div>
+                        <div class="payment-method-info"></div>
+                        <div class="payment-method-info"></div>
+                      </div>
+                      <div class="payment-method-status">
+                        <!-- No badge for non-default -->
+                      </div>
+                      <div class="payment-method-actions">
+                        <button class="btn btn-sm btn-outline">Set Default</button>
+                        <button class="btn btn-sm btn-outline">Edit</button>
+                        <button class="btn btn-sm btn-outline btn-danger">Remove</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -355,12 +328,12 @@ Client Details
                         <div class="details-value">Technology</div> {% endcomment %}
                       </div>
                       <div class="details-row">
-                        {% comment %} <div class="details-label">Tax ID</div> {% endcomment %}
-                        {% comment %} <div class="details-value">12-3456789</div> {% endcomment %}
+                        {% comment %} <div class="details-label">Tax ID</div>
+                        <div class="details-value">12-3456789</div> {% endcomment %}
                       </div>
                       <div class="details-row">
-                        {% comment %} <div class="details-label">Website</div> {% endcomment %}
-                        {% comment %} <div class="details-value">www.acmecorp.com</div> {% endcomment %}
+                        {% comment %} <div class="details-label">Website</div>
+                        <div class="details-value">www.acmecorp.com</div> {% endcomment %}
                       </div>
                     </div>
                     
@@ -510,6 +483,8 @@ Client Details
               <label for="zip-code">Zip Code</label>
               <input type="text" id="zip-code" required>
             </div>
+            <!-- Add error message container -->
+            <div id="payment-form-error" class="form-error-message" style="display: none;"></div>
           </div>
         </form>
       </div>
@@ -568,14 +543,14 @@ Client Details
               <span class="receipt-label">Payment Method:</span>
               <span id="receipt-card" class="receipt-value"></span>
             </div>
-            <div class="receipt-row">
+            {% comment %} <div class="receipt-row">
               <span class="receipt-label">Description:</span>
               <span id="receipt-description" class="receipt-value"></span>
-            </div>
-            <div class="receipt-row">
+            </div> {% endcomment %}
+            {% comment %} <div class="receipt-row">
               <span class="receipt-label">Salesperson:</span>
               <span id="receipt-salesperson" class="receipt-value"></span>
-            </div>
+            </div> {% endcomment %}
             <div class="receipt-row">
               <span class="receipt-label">Status:</span>
               <span id="receipt-status" class="receipt-value"></span>
@@ -584,12 +559,13 @@ Client Details
         </div>
       </div>
       <div class="modal-footer">
-        <button id="print-receipt" class="btn btn-primary">
+        {% comment %} TODO: Add print and email functionality {% endcomment %}
+        {% comment %} <button id="print-receipt" class="btn btn-primary">
           <i class="fa-solid fa-print"></i> Print Receipt
         </button>
         <button id="email-receipt" class="btn btn-outline">
           <i class="fa-solid fa-envelope"></i> Email Receipt
-        </button>
+        </button> {% endcomment %}
       </div>
     </div>
   </div>
@@ -613,6 +589,8 @@ Client Details
             <div class="character-counter">
               <span id="char-count">0</span>/248 characters
             </div>
+            <!-- Add error message container -->
+            <div id="note-form-error" class="form-error-message" style="display: none;"></div>
           </div>
         </form>
       </div>

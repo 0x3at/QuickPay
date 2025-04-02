@@ -2,6 +2,9 @@
 let isLoading = false;
 let clientData = null;
 
+// Add at the very top of your file
+console.log("Client details script loaded - version 1.0.5"); // Change version each time you update
+
 // Get client ID from URL or any other source
 function getClientIDFromURL() {
     // Example: Get from URL parameter
@@ -124,7 +127,7 @@ function hydratePaymentMethods(paymentProfiles) {
 
         const paymentMethodHTML = `
             <div class="payment-method-card">
-                <div class="payment-method-icon" style="color: #006fcf;">
+                <div class="payment-method-icon blue-icon">
                     <i class="fa-solid fa-credit-card"></i>
                 </div>
                 <div class="payment-method-details">
@@ -383,9 +386,85 @@ function getTimeAgo(date) {
     return "just now";
 }
 
+// Show toast notification - simplified version
+function showToast(message, duration = 3000) {
+    console.log("Showing toast with message:", message);
+
+    const toast = document.getElementById('toast-notification');
+    if (!toast) {
+        console.error("Toast element not found!");
+        alert(message); // Fallback to alert if toast element not found
+        return;
+    }
+
+    const toastContent = toast.querySelector('.toast-content');
+    const toastMessage = document.getElementById('toast-message');
+
+    // Set success style
+    toastContent.classList.remove('error');
+    toastContent.classList.add('success');
+    toastContent.querySelector('i').className = 'fa-solid fa-check-circle';
+
+    // Set message
+    toastMessage.textContent = message;
+
+    // SIMPLER APPROACH: Just use the class-based system
+    toast.classList.add('show');
+
+    // Hide after duration
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
+}
+
+// Show error message with toast - simplified version
 function showErrorMessage(message) {
-    // Add error display logic - could be a toast notification or alert
-    alert(message);
+    console.log("Showing error toast with message:", message);
+
+    const toast = document.getElementById('toast-notification');
+    if (!toast) {
+        console.error("Toast element not found!");
+        alert(message); // Fallback to alert if toast element not found
+        return;
+    }
+
+    const toastContent = toast.querySelector('.toast-content');
+    const toastMessage = document.getElementById('toast-message');
+
+    // Set error style
+    toastContent.classList.remove('success');
+    toastContent.classList.add('error');
+    toastContent.querySelector('i').className = 'fa-solid fa-exclamation-circle';
+
+    // Set message
+    toastMessage.textContent = message;
+
+    // SIMPLER APPROACH: Just use the class-based system
+    toast.classList.add('show');
+
+    // Hide after duration
+    setTimeout(() => {
+        toast.classList.remove('show');
+
+        // Reset to success style after hiding
+        setTimeout(() => {
+            toastContent.classList.remove('error');
+            toastContent.classList.add('success');
+            toastContent.querySelector('i').className = 'fa-solid fa-check-circle';
+        }, 300);
+    }, 4000);
+}
+
+// Show error in a form
+function showFormError(errorContainer, message) {
+    errorContainer.textContent = message;
+    errorContainer.style.display = 'block';
+}
+
+// Hide form error
+function hideFormError(errorContainer) {
+    errorContainer.style.display = 'none';
+    errorContainer.textContent = '';
 }
 
 // Setup tab switching
@@ -407,26 +486,68 @@ function setupTabSwitching() {
     });
 }
 
-// Setup event listeners for the payment method modal
+// Setup event listeners for the payment method modal - with enhanced debugging
 function setupPaymentMethodModal() {
-    const addPaymentBtn = document.querySelector('.payment-methods-container .card-header .btn');
+    console.log("Setting up payment method modal...");
+    
+    // Try multiple selectors to find the button
+    let addPaymentBtn = document.querySelector('#payment-methods .card-header .btn');
+    if (!addPaymentBtn) {
+        console.log("Button not found with first selector, trying alternatives...");
+        addPaymentBtn = document.querySelector('.card-header .btn-outline.btn-sm');
+    }
+    if (!addPaymentBtn) {
+        console.log("Button not found with second selector, trying another...");
+        // Try to find by text content
+        const buttons = document.querySelectorAll('.btn');
+        for (const btn of buttons) {
+            if (btn.textContent.includes("Add Payment Method")) {
+                addPaymentBtn = btn;
+                console.log("Found button by text content!");
+                break;
+            }
+        }
+    }
+    
+    console.log("Add Payment Method button found:", !!addPaymentBtn);
+    
+    // Add a direct click handler to all buttons in payment methods tab as a fallback
+    document.querySelectorAll('#payment-methods button').forEach(btn => {
+        console.log("Found a button in payment methods tab:", btn.textContent.trim());
+    });
+    
     const modal = document.getElementById('add-payment-modal');
+    if (!modal) {
+        console.error("Payment modal element not found!");
+        return;
+    }
+    
     const closeBtn = document.getElementById('close-payment-modal');
     const cancelBtn = document.getElementById('cancel-payment');
     const submitBtn = document.getElementById('submit-payment');
     const form = document.getElementById('add-payment-form');
+    const errorContainer = document.getElementById('payment-form-error');
 
     // Open modal when Add Payment Method button is clicked
     if (addPaymentBtn) {
-        addPaymentBtn.addEventListener('click', () => {
+        console.log("Adding click listener to payment method button");
+        addPaymentBtn.addEventListener('click', (e) => {
+            console.log("Add Payment Method button clicked!");
+            e.preventDefault(); // Prevent default in case it's a form button
             modal.classList.add('show');
+            // Clear any previous error messages
+            if (errorContainer) hideFormError(errorContainer);
         });
+    } else {
+        console.error("Add Payment Method button not found after multiple attempts!");
     }
 
     // Close modal functions
     function closeModal() {
         modal.classList.remove('show');
         form.reset();
+        // Clear any error messages
+        hideFormError(errorContainer);
     }
 
     // Close modal when X button is clicked
@@ -454,6 +575,9 @@ function setupPaymentMethodModal() {
 
 // Handle payment method submission
 async function submitPaymentMethod() {
+    const errorContainer = document.getElementById('payment-form-error');
+    hideFormError(errorContainer);
+
     // Get the values from the form
     const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
     const expirationDate = document.getElementById('expiration-date').value;
@@ -465,7 +589,7 @@ async function submitPaymentMethod() {
 
     // Basic validation
     if (!cardNumber || !expirationDate || !cardCode || !firstName || !lastName || !address || !zipCode) {
-        alert('Please fill in all fields');
+        showFormError(errorContainer, 'Please fill in all fields');
         return;
     }
 
@@ -515,24 +639,24 @@ async function submitPaymentMethod() {
         }
 
         const data = await response.json();
-        
+
         // Close the modal
         document.getElementById('add-payment-modal').classList.remove('show');
         document.getElementById('add-payment-form').reset();
-        
+
         // Reload client data to show the new payment method
         clientData = await fetchClientData();
         if (clientData) {
             hydratePaymentMethods(clientData.paymentProfiles);
         }
-        
-        // Show success message
-        alert('Payment method added successfully');
-        
+
+        // Show success message with toast
+        showToast('Payment method added successfully');
+
     } catch (error) {
         console.error('Error adding payment method:', error);
-        alert('Error adding payment method: ' + error.message);
-        
+        showFormError(errorContainer, `Error: ${error.message}`);
+
         // Reset button state
         const submitBtn = document.getElementById('submit-payment');
         submitBtn.innerHTML = 'Add Payment Method';
@@ -550,13 +674,14 @@ function setupNoteModal() {
     const form = document.getElementById('add-note-form');
     const noteContent = document.getElementById('note-content');
     const charCount = document.getElementById('char-count');
+    const errorContainer = document.getElementById('note-form-error');
 
     // Character counter for note textarea
     if (noteContent) {
-        noteContent.addEventListener('input', function() {
+        noteContent.addEventListener('input', function () {
             const currentLength = this.value.length;
             charCount.textContent = currentLength;
-            
+
             // Change color when approaching limit
             if (currentLength >= 200) {
                 charCount.style.color = '#ef4444';
@@ -572,6 +697,8 @@ function setupNoteModal() {
     if (addNoteBtn) {
         addNoteBtn.addEventListener('click', () => {
             modal.classList.add('show');
+            // Clear any previous error messages
+            hideFormError(errorContainer);
         });
     }
 
@@ -581,6 +708,8 @@ function setupNoteModal() {
         form.reset();
         charCount.textContent = '0';
         charCount.style.color = '';
+        // Clear any error messages
+        hideFormError(errorContainer);
     }
 
     // Close modal when X button is clicked
@@ -608,12 +737,18 @@ function setupNoteModal() {
 
 // Handle note submission
 async function submitNote() {
+    console.log("submitNote called");
+
+    const errorContainer = document.getElementById('note-form-error');
+    hideFormError(errorContainer);
+
     const author = document.getElementById('note-author').value;
     const noteText = document.getElementById('note-content').value;
 
     // Basic validation
     if (!author || !noteText) {
-        alert('Please fill in all fields');
+        console.log("Validation failed - showing form error");
+        showFormError(errorContainer, 'Please fill in all fields');
         return;
     }
 
@@ -626,10 +761,15 @@ async function submitNote() {
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
         submitBtn.disabled = true;
 
+        // Log the request
+        console.log("Sending note request with payload:", {
+            clientID, author, noteText
+        });
+
         // Create the note payload
         const payload = {
             clientID: clientID,
-            salesperson: author,
+            createdBy: author,
             note: noteText
         };
 
@@ -658,20 +798,21 @@ async function submitNote() {
         document.getElementById('add-note-form').reset();
         document.getElementById('char-count').textContent = '0';
         document.getElementById('char-count').style.color = '';
-        
+
         // Reload client data to show the new note
         clientData = await fetchClientData();
         if (clientData) {
             hydrateNotes(clientData.notes);
         }
-        
-        // Show success message
-        alert('Note added successfully');
-        
+
+        // Show success message with toast instead of alert
+        console.log("Note added successfully, showing toast");
+        showToast('Note added successfully');
+
     } catch (error) {
         console.error('Error adding note:', error);
-        alert('Error adding note: ' + error.message);
-        
+        showFormError(errorContainer, `Error: ${error.message}`);
+
         // Reset button state
         const submitBtn = document.getElementById('submit-note');
         submitBtn.innerHTML = 'Add Note';
@@ -679,10 +820,49 @@ async function submitNote() {
     }
 }
 
+// Setup receipt view
+function setupReceiptModal() {
+    const modal = document.getElementById('charge-receipt-modal');
+
+    // Close receipt modal when clicking close button
+    const closeButtons = modal.querySelectorAll('.close-modal');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.classList.remove('show');
+        }
+    });
+
+    // Setup print functionality
+    const printButton = document.getElementById('print-receipt');
+    if (printButton) {
+        printButton.addEventListener('click', () => {
+            window.print();
+        });
+    }
+
+    // Setup email functionality
+    const emailButton = document.getElementById('email-receipt');
+    if (emailButton) {
+        emailButton.addEventListener('click', () => {
+            showToast("Email functionality coming soon!");
+        });
+    }
+}
+
 // Initialize page
 async function initClientDetailsPage() {
     setupTabSwitching();
-    
+
+    // Initialize toast
+    hideStaticToastMessage();
+
     clientData = await fetchClientData();
     if (!clientData) {
         document.querySelector(".content-container").innerHTML = `
@@ -694,47 +874,143 @@ async function initClientDetailsPage() {
         `;
         return;
     }
-    
+
     hydrateClientProfile(clientData.clientDetails);
     hydratePaymentMethods(clientData.paymentProfiles);
     hydrateTransactions(clientData.transactions);
     hydrateClientDetails(clientData.clientDetails);
     hydrateNotes(clientData.notes);
-    
+
     // Setup form event listeners
     setupPaymentFormListeners();
     setupPaymentMethodModal();
     setupNoteModal();
+    setupReceiptModal();
 }
 
 // Setup payment form listeners
 function setupPaymentFormListeners() {
+    console.log("Setting up payment form listeners");
+
     const quickPaymentForm = document.querySelector(".quick-payment-form");
     if (quickPaymentForm) {
-        quickPaymentForm.addEventListener("submit", handleQuickPayment);
+        console.log("Quick payment form found, adding submit listener");
+        quickPaymentForm.addEventListener("submit", function (e) {
+            console.log("Quick payment form submitted");
+            handleQuickPayment(e);
+        });
+    } else {
+        console.warn("Quick payment form not found!");
     }
 
     const quickChargeForm = document.getElementById("quick-charge-form");
     if (quickChargeForm) {
-        quickChargeForm.addEventListener("submit", handleQuickCharge);
+        console.log("Quick charge form found, adding submit listener");
+        quickChargeForm.addEventListener("submit", function (e) {
+            console.log("Quick charge form submitted");
+            handleQuickCharge(e);
+        });
+    } else {
+        console.warn("Quick charge form not found!");
     }
 }
 
-// Handle quick payment submission
+// Handle quick payment submission - with improved error handling
 async function handleQuickPayment(event) {
     event.preventDefault();
 
     const amount = document.getElementById("quick-amount").value;
-    const paymentMethodId = document.getElementById("quick-payment-method").value;
+    const paymentProfileID = document.getElementById("quick-payment-method").value;
 
     if (!amount || parseFloat(amount) <= 0) {
-        alert("Please enter a valid amount");
+        showErrorMessage("Please enter a valid amount");
         return;
     }
 
-    // Process payment logic here
-    console.log("Processing quick payment:", { amount, paymentMethodId });
-    // You would send this to your backend endpoint
+    // Get submit button to show loading state
+    const submitButton = event.target.querySelector("button[type='submit']");
+    if (submitButton) {
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        submitButton.disabled = true;
+    }
+
+    try {
+        // Create payload for the API
+        const payload = {
+            clientID: clientData.clientDetails.clientID,
+            paymentProfileID: paymentProfileID,
+            amount: amount
+        };
+
+        console.log("Sending payment request:", payload);
+
+        // Send the request to the backend
+        const response = await fetch("/quickpay/client/profiles/charge", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        console.log("Payment response:", data);
+        
+        // Reset button state
+        if (submitButton) {
+            submitButton.innerHTML = '<i class="fa-solid fa-bolt"></i> Process Payment';
+            submitButton.disabled = false;
+        }
+
+        // Handle the response
+        if (data.success && data.transactionResult && data.transactionResult.result === "Success") {
+            // Show success message
+            showToast("Payment processed successfully!");
+            
+            try {
+                // Show receipt with transaction details
+                showReceiptDetails(data.transactionResult);
+            } catch (receiptError) {
+                console.error("Error showing receipt:", receiptError);
+                // Even if receipt fails, the payment succeeded
+                showToast("Payment successful! Receipt unavailable.");
+            }
+            
+            // Reset form
+            event.target.reset();
+            
+            // Refresh transaction data
+            setTimeout(async () => {
+                try {
+                    clientData = await fetchClientData();
+                    if (clientData) {
+                        hydrateTransactions(clientData.transactions);
+                    }
+                } catch (err) {
+                    console.error("Error refreshing transaction data:", err);
+                }
+            }, 1000);
+        } else {
+            // Show error message
+            const errorMessage = data.transactionResult?.errorText || 
+                                data.transactionResult?.error || 
+                                data.error || 
+                                "Payment processing failed. Please try again.";
+            showErrorMessage(errorMessage);
+        }
+    } catch (error) {
+        console.error("Error processing payment:", error);
+        
+        // Reset button state
+        if (submitButton) {
+            submitButton.innerHTML = '<i class="fa-solid fa-bolt"></i> Process Payment';
+            submitButton.disabled = false;
+        }
+        
+        // Show error message
+        showErrorMessage("Network error. Please check your connection and try again.");
+    }
 }
 
 // Handle quick charge submission
@@ -742,23 +1018,230 @@ async function handleQuickCharge(event) {
     event.preventDefault();
 
     const amount = document.getElementById("amount").value;
-    const paymentMethodId = document.getElementById("payment-method").value;
+    const paymentProfileID = document.getElementById("payment-method").value;
     const salesperson = document.getElementById("salesperson").value;
 
     if (!amount || parseFloat(amount) <= 0) {
-        alert("Please enter a valid amount");
+        showErrorMessage("Please enter a valid amount");
         return;
     }
 
     if (!salesperson) {
-        alert("Please enter a salesperson name");
+        showErrorMessage("Please enter a salesperson name");
         return;
     }
 
-    // Process charge logic here
-    console.log("Processing charge:", { amount, paymentMethodId, salesperson });
-    // You would send this to your backend endpoint
+    // Get submit button to show loading state
+    const submitButton = event.target.querySelector("button[type='submit']");
+    submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    submitButton.disabled = true;
+
+    try {
+        // Create payload for the API - simplified as requested
+        const payload = {
+            clientID: clientData.clientDetails.clientID,
+            paymentProfileID: paymentProfileID,
+            amount: amount
+            // salesperson removed from payload as requested
+        };
+
+        console.log("Sending charge request:", payload);
+
+        // Send the request to the backend
+        const response = await fetch("/quickpay/client/profiles/charge", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // Reset button state
+        submitButton.innerHTML = 'Process Charge';
+        submitButton.disabled = false;
+
+        // Handle the response
+        if (data.success && data.transactionResult && data.transactionResult.result === "Success") {
+            // Show success message
+            showToast("Charge processed successfully!");
+
+            // For receipt display, we'll use the salesperson from the form 
+            // but we'll need to add it to the transaction result
+            const enhancedResult = {
+                ...data.transactionResult,
+                salesperson: salesperson // Add salesperson from form for display purposes
+            };
+
+            // Show receipt with transaction details
+            showReceiptDetails(enhancedResult);
+
+            // Reset form
+            event.target.reset();
+
+            // Reload transactions to show the new one
+            clientData = await fetchClientData();
+            if (clientData) {
+                hydrateTransactions(clientData.transactions);
+            }
+        } else {
+            // Show error message
+            const errorMessage = data.transactionResult?.errorText ||
+                data.transactionResult?.error ||
+                data.error ||
+                "Charge processing failed. Please try again.";
+            showErrorMessage(errorMessage);
+        }
+    } catch (error) {
+        console.error("Error processing charge:", error);
+
+        // Reset button state
+        submitButton.innerHTML = 'Process Charge';
+        submitButton.disabled = false;
+
+        // Show error message
+        showErrorMessage("Network error. Please check your connection and try again.");
+    }
 }
 
-// Initialize the page when DOM is ready
-document.addEventListener("DOMContentLoaded", initClientDetailsPage);
+// Immediately hide the static toast on page load - simplified version
+function hideStaticToastMessage() {
+    console.log("Hiding static toast message");
+    const toast = document.getElementById('toast-notification');
+    if (toast) {
+        // Just remove the show class
+        toast.classList.remove('show');
+
+        // And clear the message
+        const toastMessage = document.getElementById('toast-message');
+        if (toastMessage) {
+            toastMessage.textContent = '';
+        }
+    }
+}
+
+// Call this immediately
+document.addEventListener('DOMContentLoaded', function () {
+    hideStaticToastMessage();
+    // Continue with normal initialization
+    initClientDetailsPage();
+});
+
+// At the top of your file
+// Add a version query parameter to all dynamically loaded resources
+function addVersionToURL(url) {
+    const timestamp = new Date().getTime();
+    const separator = url.indexOf('?') !== -1 ? '&' : '?';
+    return `${url}${separator}v=${timestamp}`;
+}
+
+// Debug helper function - can be called from browser console
+window.debugShowToast = function (message = "Test toast message") {
+    showToast(message);
+};
+
+window.debugShowError = function (message = "Test error message") {
+    showErrorMessage(message);
+};
+
+// Function to display transaction receipt - with error handling
+function showReceiptDetails(transactionResult) {
+    console.log("Showing receipt for transaction:", transactionResult);
+    
+    try {
+        const modal = document.getElementById('charge-receipt-modal');
+        if (!modal) {
+            console.error("Receipt modal not found");
+            showToast("Payment successful! Receipt unavailable.");
+            return;
+        }
+        
+        // Safely set text content with error handling
+        const safeSetText = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            } else {
+                console.warn(`Element with id '${id}' not found in receipt modal`);
+            }
+        };
+        
+        // Set transaction details in the receipt
+        const statusHeading = modal.querySelector('.receipt-status h3');
+        if (statusHeading) {
+            statusHeading.textContent = 'Payment Successful';
+        }
+        
+        // Client information
+        safeSetText('receipt-client', clientData.clientDetails.companyName);
+        safeSetText('receipt-clientId', clientData.clientDetails.clientID);
+        
+        // Transaction details
+        safeSetText('receipt-transId', transactionResult.transId || "N/A");
+        safeSetText('receipt-amount', '$' + parseFloat(transactionResult.amount).toFixed(2));
+        
+        // Format date
+        const transDate = transactionResult.created_at ? new Date(transactionResult.created_at) : new Date();
+        safeSetText('receipt-date', transDate.toLocaleString());
+        
+        safeSetText('receipt-card', `${transactionResult.accountType || "Card"} ending in ${(transactionResult.accountNumber || "").slice(-4)}`);
+        safeSetText('receipt-description', transactionResult.invoiceID || 'Standard charge');
+        safeSetText('receipt-salesperson', transactionResult.salesperson || clientData.clientDetails.salesperson || "N/A");
+        safeSetText('receipt-status', transactionResult.result || "Success");
+        
+        // Show the modal
+        modal.classList.add('show');
+        
+        // Setup close functionality
+        const closeButtons = modal.querySelectorAll('.close-modal');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modal.classList.remove('show');
+            });
+        });
+        
+        // Close when clicking outside the modal
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+        
+        // Setup print functionality
+        const printButton = document.getElementById('print-receipt');
+        if (printButton) {
+            printButton.addEventListener('click', () => {
+                window.print();
+            });
+        }
+        
+        // Make sure transactions get updated after a successful payment
+        setTimeout(async () => {
+            try {
+                clientData = await fetchClientData();
+                if (clientData) {
+                    hydrateTransactions(clientData.transactions);
+                }
+            } catch (err) {
+                console.error("Error refreshing transaction data:", err);
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error("Error displaying receipt:", error);
+        showToast("Payment processed successfully! Receipt unavailable.");
+    }
+}
+
+// Add this debugging helper to the global scope
+window.debugShowModal = function() {
+    const modal = document.getElementById('add-payment-modal');
+    if (modal) {
+        console.log("Manually showing payment modal");
+        modal.classList.add('show');
+    } else {
+        console.error("Modal not found for manual display");
+    }
+}
