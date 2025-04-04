@@ -9,23 +9,28 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
+
 # import os
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+HOSTNAME = "opinionresearchers.com"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-r6qrz#n_wg%mx=ppkzehe$$20_y-4-n$fij3q-u&7=ulznoovq"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -38,7 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "debug_toolbar",
-    "QuickPay.portal"
+    "PayPortal",
 ]
 
 MIDDLEWARE = [
@@ -80,9 +85,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
-    }
+    },
     # "mysql03": {
-    #     "ENGINE": "django.db.backends.mysql", 
+    #     "ENGINE": "django.db.backends.mysql",
     #     "NAME": os.getenv("DATABASE03"),
     #     "USER": os.getenv("USER03"),
     #     "PASSWORD": os.getenv("PASSWORD03"),
@@ -92,12 +97,12 @@ DATABASES = {
     #         "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
     #     },
     # },
-    # "mysql01": {
+    # "default": {
     #     "ENGINE": "django.db.backends.mysql",
-    #     "NAME": os.getenv("DATABASE01"),
-    #     "USER": os.getenv("USER01"),
-    #     "PASSWORD": os.getenv("PASSWORD01"),
-    #     "HOST": os.getenv("HOST01"),
+    #     "NAME": "ai",
+    #     "USER": os.getenv("DBUSER"),
+    #     "PASSWORD": os.getenv("DBPASSWORD"),
+    #     "HOST": os.getenv("DBHOST"),
     #     "PORT": "3306",
     #     "OPTIONS": {
     #         "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -147,7 +152,4 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-INTERNAL_IPS = [
-    "127.0.0.1",
-    "localhost"
-]
+INTERNAL_IPS = ["127.0.0.1", "localhost"]

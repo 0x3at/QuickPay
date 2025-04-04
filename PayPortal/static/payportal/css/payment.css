@@ -1,0 +1,71 @@
+.payment-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  #payment-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .client-panel,
+  .payment-panel {
+    height: fit-content;
+  }
+
+  /* Responsive layout */
+  @media (max-width: 1024px) {
+    #payment-form {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+  
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    transform: translateX(150%);
+    transition: transform 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.toast-notification.show {
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 10px;
+}
+
+.toast-content.success {
+    border-left: 4px solid var(--success);
+}
+
+.toast-content.error {
+    border-left: 4px solid var(--error);
+}
+
+.toast-content i {
+    font-size: 20px;
+    margin-right: 12px;
+}
+
+.toast-content.success i {
+    color: var(--success);
+}
+
+.toast-content.error i {
+    color: var(--error);
+}
