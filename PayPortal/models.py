@@ -2,7 +2,7 @@ import json
 import os
 import traceback
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import dotenv
 from authorizenet import apicontractsv1 as adn
@@ -45,7 +45,9 @@ class Client(models.Model):
     companyName = models.CharField(max_length=128, default="", blank=True)
     phone = models.CharField(max_length=128, default="", blank=True)
     email = models.CharField(max_length=254, default="", blank=True)
-    customerProfileID = models.CharField(max_length=128, default="", blank=True)
+    wcCustomerProfileID = models.CharField(max_length=128, default="", blank=True)
+    cgCustomerProfileID = models.CharField(max_length=128, default="", blank=True)
+    vbcCustomerProfileID = models.CharField(max_length=128, default="", blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     isParent = models.BooleanField(default=False)
     isChild = models.BooleanField(default=False)
@@ -177,135 +179,168 @@ class Client(models.Model):
                 )
             )
 
-            # Create customer profile in Authorize.net
-            processorInterface: AuthNetInterface = AuthNetInterface()
-            merchantAuth: merchantAuthenticationType = (
-                processorInterface.getAuthStruct()
-            )
+            # Create customer profile in Authorize.net for each entity
+            wcProcessorInterface: AuthNetInterface = AuthNetInterface(entityKey="wc")
+            cgProcessorInterface: AuthNetInterface = AuthNetInterface(entityKey="cg")
+            vbcProcessorInterface: AuthNetInterface = AuthNetInterface(entityKey="vbc")
+            interfaceArray: list[AuthNetInterface] = [
+                wcProcessorInterface,
+                cgProcessorInterface,
+                vbcProcessorInterface,
+            ]
 
-            if merchantAuth is not None:
+            # Track overall success
+            profileCreationSuccess = False
+
+            for processorInterface in interfaceArray:
+                entityKey = processorInterface.entity["key"]
+                entityOrg = processorInterface.entity["Organization"]
+
                 print(
                     Panel(
-                        f"[bold green]✅ Merchant authentication obtained: {merchantAuth is not None}[/bold green]",
-                        title="✅[SUCCESS] ‖Client.createClientProfile‖ Authentication",
-                        border_style="bright_green",
-                    )
-                )
-            else:
-                # Should never happen
-                print(
-                    Panel(
-                        f"[bold red]❌ Merchant authentication obtained: {merchantAuth is not None}[/bold red]",
-                        title="❌[ERROR] ‖Client.createClientProfile‖ Authentication",
-                        border_style="bright_red",
-                    )
-                )
-
-            # Create customer profile
-            customerProfile = adn.customerProfileType()
-            customerProfile.merchantCustomerId = (
-                str(clientID) if clientID else companyName
-            )
-            customerProfile.description = f"Profile for {companyName}"
-            customerProfile.email = email
-
-            print(
-                Panel(
-                    f"[bold yellow]Submitting Request to create Customer Profile\n- Merchant Customer ID: {customerProfile.merchantCustomerId}\n- Description: {customerProfile.description}\n- Email: {customerProfile.email}\n- Environment: {processorInterface.env}[/bold yellow]",
-                    title="🔎[INFO] ‖Client.createClientProfile‖ Customer Profile Request",
-                    border_style="bright_blue",
-                )
-            )
-
-            # Prepare the request
-            request = adn.createCustomerProfileRequest()
-            request.merchantAuthentication = merchantAuth
-            request.profile = customerProfile
-            # request.validationMode = "liveMode"
-
-            print(
-                Panel(
-                    f"[bold bright_blue]Sending customer profile request to {processorInterface.env}[/bold bright_blue]",
-                    title="🔎[INFO] ‖Client.createClientProfile‖ API Request",
-                    border_style="bright_blue",
-                )
-            )
-
-            # Create controller and execute
-            controller = createCustomerProfileController(request)
-            controller.setenvironment(processorInterface.env)
-
-            try:
-                controller.execute()
-                response = controller.getresponse()
-
-                # Use our custom response printer for better error details
-                print(
-                    Panel(
-                        "[bold bright_blue]Full Response Details:[/bold bright_blue]",
-                        title="🔎[INFO] ‖Client.createClientProfile‖ Response",
+                        f"[bold bright_blue]Creating profile for {entityOrg} (key: {entityKey})[/bold bright_blue]",
+                        title="🔎[INFO] ‖Client.createClientProfile‖ Entity Profile Creation",
                         border_style="bright_blue",
                     )
                 )
 
-            except Exception as api_error:
-                print(
-                    Panel(
-                        f"[bold red]Authorize.net API error: {str(api_error)}[/bold red]",
-                        title="❌[ERROR] ‖Client.createClientProfile‖ API Error",
-                        border_style="bright_red",
-                    )
+                merchantAuth: merchantAuthenticationType = (
+                    processorInterface.getAuthStruct()
                 )
-                client.delete()
-                return {"error": f"API Error: {str(api_error)}"}
 
-            if response is not None:
-                if response.messages.resultCode == "Ok":
+                if merchantAuth is not None:
                     print(
                         Panel(
-                            f"[bold green]Response result code: {response.messages.resultCode}\n✅ Success! Customer profile created with ID: {response.customerProfileId}[/bold green]",
-                            title="✅[SUCCESS] ‖Client.createClientProfile‖ Profile Creation Success",
+                            f"[bold green]✅ Merchant authentication obtained for {entityOrg}[/bold green]",
+                            title="✅[SUCCESS] ‖Client.createClientProfile‖ Authentication",
                             border_style="bright_green",
                         )
                     )
-                    client.customerProfileID = response.customerProfileId
-                    client.save()
-                    return client
                 else:
-                    error_msg = (
-                        response.messages.message[0].text
-                        if hasattr(response.messages, "message")
-                        else "Unknown error"
-                    )
-                    error_code = (
-                        response.messages.message[0].code
-                        if hasattr(response.messages, "message")
-                        else "Unknown code"
-                    )
+                    # Should never happen
                     print(
                         Panel(
-                            f"[bold red]❌ Error creating profile - Code: {error_code}, Message: {error_msg}[/bold red]",
-                            title="❌[ERROR] ‖Client.createClientProfile‖ Profile Creation Error",
+                            f"[bold red]❌ Merchant authentication failed for {entityOrg}[/bold red]",
+                            title="❌[ERROR] ‖Client.createClientProfile‖ Authentication",
                             border_style="bright_red",
                         )
                     )
-                    client.delete()
-                    return {"error": f"Error {error_code}: {error_msg}"}
-            else:
+                    continue  # Skip this entity and try the next one
+
+                # Create customer profile
+                customerProfile = adn.customerProfileType()
+                customerProfile.merchantCustomerId = (
+                    f"{entityKey}_{str(clientID)}"
+                    if clientID
+                    else f"{entityKey}_{companyName}"
+                )
+                customerProfile.description = f"{entityOrg} Profile for {companyName}"
+                customerProfile.email = email
+
                 print(
                     Panel(
-                        "[bold red]No response received from Authorize.net[/bold red]",
-                        title="❌[ERROR] ‖Client.createClientProfile‖ Communication Error",
-                        border_style="bright_red",
+                        f"[bold yellow]Submitting Request to create Customer Profile for {entityOrg}\n- Merchant Customer ID: {customerProfile.merchantCustomerId}\n- Description: {customerProfile.description}\n- Email: {customerProfile.email}\n- Environment: {processorInterface.env}[/bold yellow]",
+                        title="🔎[INFO] ‖Client.createClientProfile‖ Customer Profile Request",
+                        border_style="bright_blue",
                     )
                 )
+
+                # Prepare the request
+                request = adn.createCustomerProfileRequest()
+                request.merchantAuthentication = merchantAuth
+                request.profile = customerProfile
+                # request.validationMode = "liveMode"
+
+                print(
+                    Panel(
+                        f"[bold bright_blue]Sending customer profile request to {processorInterface.env} for {entityOrg}[/bold bright_blue]",
+                        title="🔎[INFO] ‖Client.createClientProfile‖ API Request",
+                        border_style="bright_blue",
+                    )
+                )
+
+                # Create controller and execute
+                controller = createCustomerProfileController(apirequest=request)
+                controller.setenvironment(userenvironment=processorInterface.env)
+
+                try:
+                    controller.execute()
+                    response = controller.getresponse()
+
+                    # Use our custom response printer for better error details
+                    print(
+                        Panel(
+                            f"[bold bright_blue]Full Response Details for {entityOrg}:[/bold bright_blue]",
+                            title="🔎[INFO] ‖Client.createClientProfile‖ Response",
+                            border_style="bright_blue",
+                        )
+                    )
+
+                except Exception as apiError:
+                    print(
+                        Panel(
+                            f"[bold red]Authorize.net API error for {entityOrg}: {str(apiError)}[/bold red]",
+                            title="❌[ERROR] ‖Client.createClientProfile‖ API Error",
+                            border_style="bright_red",
+                        )
+                    )
+                    continue  # Try next entity instead of totally failing
+
+                if response is not None:
+                    if response.messages.resultCode == "Ok":
+                        profileIdFieldName = f"{entityKey}CustomerProfileID"
+                        setattr(client, profileIdFieldName, response.customerProfileId)
+                        client.save()
+                        profileCreationSuccess = True
+
+                        print(
+                            Panel(
+                                f"[bold green]Response result code: {response.messages.resultCode}\n✅ Success! {entityOrg} customer profile created with ID: {response.customerProfileId}[/bold green]",
+                                title="✅[SUCCESS] ‖Client.createClientProfile‖ Profile Creation Success",
+                                border_style="bright_green",
+                            )
+                        )
+                    else:
+                        errorMsg = (
+                            response.messages.message[0].text
+                            if hasattr(response.messages, "message")
+                            else "Unknown error"
+                        )
+                        errorCode = (
+                            response.messages.message[0].code
+                            if hasattr(response.messages, "message")
+                            else "Unknown code"
+                        )
+                        print(
+                            Panel(
+                                f"[bold red]❌ Error creating {entityOrg} profile - Code: {errorCode}, Message: {errorMsg}[/bold red]",
+                                title="❌[ERROR] ‖Client.createClientProfile‖ Profile Creation Error",
+                                border_style="bright_red",
+                            )
+                        )
+                else:
+                    print(
+                        Panel(
+                            f"[bold red]No response received from Authorize.net for {entityOrg}[/bold red]",
+                            title="❌[ERROR] ‖Client.createClientProfile‖ Communication Error",
+                            border_style="bright_red",
+                        )
+                    )
+
+            # After trying all entities, determine overall success
+            if profileCreationSuccess:
+                return client
+            else:
+                # If no profiles were created successfully, delete the client and return error
                 client.delete()
-                return {"error": "No response from payment gateway"}
+                return {
+                    "error": "Failed to create customer profile in any payment gateway"
+                }
 
         except Exception as e:
             print(
                 Panel(
-                    f"[bold red]Unexpected error in createPaymentProfile: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                    f"[bold red]Unexpected error in createClientProfile: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
                     title="❌[ERROR] ‖Client.createClientProfile‖ System Error",
                     border_style="bright_red",
                 )
@@ -319,6 +354,7 @@ class ClientNote(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     createdBy = models.CharField(max_length=128, default="", blank=True)
     note = models.CharField(max_length=248)
+    special = models.BooleanField(default=False)
 
     def getClientNoteDetails(self) -> dict:
         return {
@@ -326,13 +362,17 @@ class ClientNote(models.Model):
             "createdAt": self.createdAt,
             "createdBy": self.createdBy,
             "note": self.note,
+            "special": self.special,
         }
 
     @staticmethod
-    def createNote(client: Client, createdBy: str, note: str):
+    def createNote(client: Client, createdBy: str, note: str, special: bool = False):
         try:
             noteRec: ClientNote = ClientNote(
-                clientID=client.clientID, createdBy=createdBy, note=note
+                clientID=client.clientID,
+                createdBy=createdBy,
+                note=note,
+                special=special,
             )
             noteRec.save()
             return noteRec
@@ -390,12 +430,16 @@ class PaymentProfile(models.Model):
 
     @staticmethod
     def addPaymentMethod(
-        client: Client, cardDetails: CardDetails, billingDetails: CardBillingDetails
+        client: Client,
+        cardDetails: CardDetails,
+        billingDetails: CardBillingDetails,
+        entityKey: str,
     ):
+        processorInterface: AuthNetInterface = AuthNetInterface(entityKey=entityKey)
         """Add a payment method to an existing customer profile"""
         print(
             Panel(
-                f"[bold bright_blue]Adding payment method to profile for [{client.clientID}]{client.companyName} ProfileID: {client.customerProfileID}[/bold bright_blue]",
+                f"[bold bright_blue]Adding payment method to profile for [{client.clientID}]{client.companyName} [/bold bright_blue]",
                 title="🔎[INFO] ‖PaymentProfile.addPaymentMethod‖ Payment Method Addition",
                 border_style="bright_blue",
             )
@@ -404,7 +448,8 @@ class PaymentProfile(models.Model):
         profile: PaymentProfile = PaymentProfile(
             clientID=client.clientID,
             createdBy=client.salesperson,
-            customerProfileID=client.customerProfileID,
+            billedFrom=processorInterface.entity["Organization"],
+            customerProfileID=getattr(client, f"{processorInterface.entity['key']}"),
             firstName=billingDetails.firstName,
             lastName=billingDetails.lastName,
             email=client.email,
@@ -413,15 +458,12 @@ class PaymentProfile(models.Model):
             lastFour=cardDetails.cardNumber[-4:],
         )
         profile.save()
-        processorInterface: AuthNetInterface = AuthNetInterface()
         # Get merchant authentication
         merchantAuth: merchantAuthenticationType = processorInterface.getAuthStruct()
 
         # Create credit card
-        creditCard: creditCardType = adn.creditCardType()
-        creditCard.cardNumber = cardDetails.cardNumber
-        creditCard.expirationDate = cardDetails.expirationDate
-        creditCard.cardCode = cardDetails.cardCode
+        creditCard: creditCardType = processorInterface.getCardStruct(cardDetails)
+
         print(
             Panel(
                 f"[bold yellow]Card info prepared: {cardDetails.cardNumber[-4:]} exp: {cardDetails.expirationDate}[/bold yellow]",
@@ -449,13 +491,14 @@ class PaymentProfile(models.Model):
         # Create request
         request = adn.createCustomerPaymentProfileRequest()
         request.merchantAuthentication = merchantAuth
-        request.customerProfileId = client.customerProfileID
+        request.customerProfileId = getattr(
+            client, f"{processorInterface.entity['key']}"
+        )
         request.paymentProfile = paymentProfile
-        request.validationMode = os.getenv("AUTH_NET_MODE")  # or "testMode" for testing
 
         print(
             Panel(
-                f"[bold bright_blue]Sending payment profile request to Authorize.net for customer: {client.customerProfileID}[/bold bright_blue]",
+                f"[bold bright_blue]Sending payment profile request to Authorize.net for client [{client.clientID}]{client.companyName} [/bold bright_blue]",
                 title="🔎[INFO] ‖PaymentProfile.addPaymentMethod‖ API Request",
                 border_style="bright_blue",
             )
@@ -526,24 +569,92 @@ class PaymentProfile(models.Model):
             return {"error": "Failed to create payment profile"}
 
 
+class Entity(models.Model):
+    entityCode = models.CharField(max_length=128, default="", blank=True)
+    entityName = models.CharField(max_length=128, default="", blank=True)
+    keyStatus = models.CharField(max_length=128, default="", blank=True)
+    authNetID = models.CharField(max_length=128, default="", blank=True)
+    authNetTK = models.CharField(max_length=128, default="", blank=True)
+    authNetEnv = models.CharField(max_length=128, default="", blank=True)
+    createdAt = models.DateTimeField(auto_now_add=True)
+    updatedAt = models.DateTimeField(auto_now=True)
+    keyGeneratedAt = models.DateTimeField(auto_now_add=True, default=datetime.now())
+    renewsAt = models.DateTimeField(
+        default=datetime.now()
+        + timedelta(
+            days=int(str(os.getenv("KEY_RENEWAL_DAYS")))
+            if os.getenv("KEY_RENEWAL_DAYS") is not None
+            else 90
+        ),
+    )
+    processorList = models.CharField(max_length=248, default="", blank=True)
+    gatewayID = models.CharField(max_length=128, default="", blank=True)
+    marketType = models.CharField(max_length=128, default="", blank=True)
+    paymentMethods = models.CharField(max_length=248, default="", blank=True)
+    publicClientKey = models.CharField(max_length=128, default="", blank=True)
+    contactEmail = models.CharField(max_length=248, default="", blank=True)
+    contactFirstName = models.CharField(max_length=128, default="", blank=True)
+    contactLastName = models.CharField(max_length=128, default="", blank=True)
+    productCodes = models.CharField(max_length=248, default="", blank=True)
+
+    @staticmethod
+    def createEntity(entity: dict):
+        entityRec: Entity = Entity(
+            entityCode=entity["entityCode"],
+            entityName=entity["entityName"],
+            keyStatus=entity["keyStatus"],
+            authNetID=entity["authNetID"],
+            authNetTK=entity["authNetTK"],
+            authNetEnv=entity["authNetEnv"],
+            processorList=entity["processorList"],
+            gatewayID=entity["gatewayID"],
+            marketType=entity["marketType"],
+            paymentMethods=entity["paymentMethods"],
+            publicClientKey=entity["publicClientKey"],
+            contactEmail=entity["contactEmail"],
+            contactFirstName=entity["contactFirstName"],
+            contactLastName=entity["contactLastName"],
+            productCodes=entity["productCodes"],
+        )
+        entityRec.save()
+        return entityRec
+
 class AuthNetInterface:
-    def __init__(self):
+    def __init__(self, entityKey: str):
+        self.keyMap: dict = {
+            "wc": {
+                "prefix": "WC_",
+                "key": "wcCustomerProfileID",
+                "Organization": "Wholesale Communications",
+            },
+            "cg": {
+                "prefix": "CG_",
+                "key": "cgCustomerProfileID",
+                "Organization": "Contract Genie",
+            },
+            "vbc": {
+                "prefix": "VBC_",
+                "key": "vbcCustomerProfileID",
+                "Organization": "VoiceBroadcasting",
+            },
+        }
+        self.entity: dict = self.keyMap[entityKey]
         self.processor: str = "AuthorizeNet"
-        self.sandbox: bool = bool(os.getenv("DEV"))
+        self.sandbox: bool = True if os.getenv("SANDBOX_MODE") == "1" else False
         self.env: str | None = (
             os.getenv("SANDBOX_AUTH_NET_ENV")
             if self.sandbox
             else os.getenv("PROD_AUTH_NET_ENV")
         )
         self.apiLoginID: str | None = (
-            os.getenv("SANDBOX_AUTH_NET_ID")
+            os.getenv(f"{self.entity['prefix']}SANDBOX_AUTH_NET_ID")
             if self.sandbox
-            else os.getenv("PROD_AUTH_NET_ID")
+            else os.getenv(f"{self.entity['prefix']}PROD_AUTH_NET_ID")
         )
         self.transactionKey: str | None = (
-            os.getenv("SANDBOX_AUTH_NET_TK")
+            os.getenv(f"{self.entity['prefix']}SANDBOX_AUTH_NET_TK")
             if self.sandbox
-            else os.getenv("PROD_AUTH_NET_TK")
+            else os.getenv(f"{self.entity['prefix']}PROD_AUTH_NET_TK")
         )
         print(
             Panel(
@@ -618,7 +729,11 @@ class AuthNetInterface:
 
     @staticmethod
     def processCardTransaction(
-        amount: float, cardDetails: CardDetails, clientID: int, salesperson: str
+        amount: float,
+        cardDetails: CardDetails,
+        clientID: int,
+        salesperson: str,
+        entityKey: str,
     ) -> dict:
         print(
             Panel(
@@ -628,6 +743,7 @@ class AuthNetInterface:
             )
         )
 
+        processorInterface: AuthNetInterface = AuthNetInterface(entityKey=entityKey)
         # Initialize Transaction Record
         invoiceID: str = str(uuid.uuid4())[:16]
         refID: str = str(datetime.now().timestamp())
@@ -662,7 +778,7 @@ class AuthNetInterface:
         )
 
         txRequest = adn.createTransactionRequest()
-        txRequest.merchantAuthentication = AuthNetInterface().getAuthStruct()
+        txRequest.merchantAuthentication = processorInterface.getAuthStruct()
         txRequest.refId = refID
         txRequest.transactionRequest = AuthNetInterface.getTransactionStruct(
             amount=amount,  # Must convert float to string
@@ -672,11 +788,11 @@ class AuthNetInterface:
 
         # Execute the request
         controller = createTransactionController(txRequest)
-        controller.setenvironment(AuthNetInterface().env)
+        controller.setenvironment(processorInterface.env)
 
         print(
             Panel(
-                f"[bold bright_blue]Sending transaction to {AuthNetInterface().env}\nInvoice ID: {invoiceID}\nAmount: ${amount}[/bold bright_blue]",
+                f"[bold bright_blue]Sending transaction to {processorInterface.env}\nInvoice ID: {invoiceID}\nAmount: ${amount}[/bold bright_blue]",
                 title="🔎[INFO] ‖AuthNetInterface.processCardTransaction‖ API Request",
                 border_style="bright_blue",
             )
@@ -709,7 +825,9 @@ class AuthNetInterface:
             # Extract main messages fields
             if hasattr(response, "messages"):
                 # resultStatus = messages.resultCode
-                tx.resultStatus = getattr(response.messages, "resultCode", "Not Available")
+                tx.resultStatus = getattr(
+                    response.messages, "resultCode", "Not Available"
+                )
 
                 # Print response in nice format
                 if tx.resultStatus == "Ok":
@@ -806,7 +924,9 @@ class AuthNetInterface:
                         # resultText (part 2) = transactionResponse.messages.message[0].description
                         # Only set resultText from here if it's not already set from messages.message
                         if not tx.resultText:
-                            tx.resultText = getattr(txMsg, "description", "Not Available")
+                            tx.resultText = getattr(
+                                txMsg, "description", "Not Available"
+                            )
 
                 # Get error information if it exists
                 if hasattr(txResp, "errors") and hasattr(txResp.errors, "error"):
@@ -864,12 +984,16 @@ class AuthNetInterface:
                             err = txResp.errors.error[0]
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
                             # Update resultText here as well
-                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
+                            tx.resultText = getattr(
+                                err, "errorText", "Unknown error occurred"
+                            )
                         elif not isinstance(txResp.errors.error, list):
                             err = txResp.errors.error
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
                             # Update resultText here as well
-                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
+                            tx.resultText = getattr(
+                                err, "errorText", "Unknown error occurred"
+                            )
 
                 # If we don't have specific error info from transaction, use general errors
                 if (
@@ -1080,13 +1204,18 @@ class AuthNetInterface:
         paymentProfile: PaymentProfile,
         client: Client,
         amount: str,
+        entityKey: str,
         invoiceID=None,
         description=None,
     ):
         """Process a payment using stored customer payment profile"""
+        processorInterface = AuthNetInterface(entityKey=entityKey)
         if not paymentProfile.customerProfileID or not paymentProfile.paymentProfileID:
             return {"error": "Missing customer or payment profile ID"}
-        if client.customerProfileID != paymentProfile.customerProfileID:
+        if (
+            getattr(client, f"{processorInterface.entity['key']}")
+            != paymentProfile.customerProfileID
+        ):
             return {"error": "Client and payment profile do not match"}
         # Create a unique invoiceID if not provided
         if not invoiceID:
@@ -1102,11 +1231,17 @@ class AuthNetInterface:
             refID=refID,
             amount=amount,
             salesperson=client.salesperson,
+            billedFrom=processorInterface.entity["Organization"],
+            customerProfileID=paymentProfile.customerProfileID,
+            paymentProfileID=paymentProfile.paymentProfileID,
+            firstName=paymentProfile.firstName,
+            lastName=paymentProfile.lastName,
+            email=paymentProfile.email,
+            streetAddress=paymentProfile.streetAddress,
         )
         tx.save()
-        AuthInterface = AuthNetInterface()
         # Get merchant authentication
-        merchantAuth = AuthInterface.getAuthStruct()
+        merchantAuth = processorInterface.getAuthStruct()
 
         # Create a customer profile payment type
         profileToCharge = adn.customerProfilePaymentType()
@@ -1129,7 +1264,7 @@ class AuthNetInterface:
 
         # Add order information if needed
         if description or invoiceID:
-            order = AuthInterface.getOrderStruct(invoiceID)
+            order = processorInterface.getOrderStruct(invoiceID)
             if description:
                 order.description = description
             txType.order = order
@@ -1138,7 +1273,7 @@ class AuthNetInterface:
 
         # Create controller and execute
         controller = createTransactionController(txRequest)
-        controller.setenvironment(AuthInterface.env)
+        controller.setenvironment(processorInterface.env)
         controller.execute()
 
         # Update transaction record
@@ -1321,12 +1456,16 @@ class AuthNetInterface:
                             err = txResp.errors.error[0]
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
                             # Update resultText here as well
-                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
+                            tx.resultText = getattr(
+                                err, "errorText", "Unknown error occurred"
+                            )
                         elif not isinstance(txResp.errors.error, list):
                             err = txResp.errors.error
                             tx.error = getattr(err, "errorCode", "UNKNOWN_ERROR")
                             # Update resultText here as well
-                            tx.resultText = getattr(err, "errorText", "Unknown error occurred")
+                            tx.resultText = getattr(
+                                err, "errorText", "Unknown error occurred"
+                            )
 
                 # If we don't have specific error info from transaction, use general errors
                 if (
@@ -1374,7 +1513,7 @@ class Transaction(models.Model):
     invoiceID = models.CharField(max_length=16)
     created_at = models.DateTimeField(auto_now_add=True)
     clientID = models.IntegerField(default=0, blank=True)
-    processor = models.CharField(max_length=128, default="", blank=True)
+    processor = models.CharField(max_length=128, default="AuthorizeNet", blank=True)
     billedFrom = models.CharField(max_length=128, default="", blank=True)
     customerProfileID = models.CharField(max_length=128, default="", blank=True)
     paymentProfileID = models.CharField(max_length=128, default="", blank=True)

@@ -172,3 +172,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+portal.keys.env
+.data/cg.json
+.data/temp.db
+.data/vbc.json
+.data/wc.json
+.data/client.csv

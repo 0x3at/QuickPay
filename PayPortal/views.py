@@ -22,13 +22,16 @@ from PayPortal.models import (
 def dashboard(request):
     return render(request, "payportal/dashboard_clients.html")
 
+
 @csrf_exempt
 def payment(request):
     return render(request, "payportal/payment.html")
 
+
 @csrf_exempt
 def clientDetails(request):
     return render(request, "payportal/client_details.html")
+
 
 @csrf_exempt
 def clientProfile(request):
@@ -56,12 +59,19 @@ def clientProfile(request):
         client = Client.objects.get(clientID=clientID)
         paymentProfiles = PaymentProfile.objects.filter(clientID=clientID).all()
         notes = ClientNote.objects.filter(clientID=clientID).all()
-        transactions = Transaction.objects.filter(clientID=clientID).all().order_by('-created_at')
+        transactions = (
+            Transaction.objects.filter(clientID=clientID).all().order_by("-created_at")
+        )
         clientProfile = {
             "clientDetails": client.getClientDetails(),
-            "paymentProfiles": [paymentProfile.getPaymentProfileDetails() for paymentProfile in paymentProfiles],
+            "paymentProfiles": [
+                paymentProfile.getPaymentProfileDetails()
+                for paymentProfile in paymentProfiles
+            ],
             "notes": [note.getClientNoteDetails() for note in notes],
-            "transactions": [transaction.getResults() for transaction in transactions.reverse()],
+            "transactions": [
+                transaction.getResults() for transaction in transactions.reverse()
+            ],
         }
         return JsonResponse(clientProfile, status=200)
 
@@ -76,7 +86,6 @@ def clientProfile(request):
         return JsonResponse(
             {"error": f"An unexpected error occurred: {str(e)}"}, status=500
         )
-
 
 
 @csrf_exempt
@@ -106,7 +115,8 @@ def chargeCard(request) -> JsonResponse:
         amount = payload.get("amount")
         cardDetails = payload.get("cardDetails")
         salesperson = payload.get("salesperson")
-        
+        entityKey = payload.get("entityKey")
+
         # Validate required fields
         if not clientID or not amount or not cardDetails or not salesperson:
             print(
@@ -132,6 +142,7 @@ def chargeCard(request) -> JsonResponse:
             cardDetails=cardDetails,
             clientID=clientID,
             salesperson=salesperson,
+            entityKey=entityKey,
         )
 
         # Check if transaction was successful
@@ -168,6 +179,7 @@ def chargeCard(request) -> JsonResponse:
             {"error": f"An unexpected error occurred: {str(e)}"}, status=500
         )
 
+
 @csrf_exempt
 def chargeProfile(request) -> JsonResponse:
     """Charge a profile"""
@@ -175,17 +187,18 @@ def chargeProfile(request) -> JsonResponse:
         print(
             Panel(
                 f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
-                title="❌[ERROR] |chargeProfile| Method Error", 
+                title="❌[ERROR] |chargeProfile| Method Error",
                 border_style="bright_red",
             )
         )
         return JsonResponse({"error": "Method not allowed"}, status=405)
-    
+
     try:
         payload = json.loads(request.body)
         clientID = payload.get("clientID")
         paymentProfileID = payload.get("paymentProfileID")
         amount = payload.get("amount")
+        entityKey = payload.get("entityKey")
         print(
             Panel(
                 f"[bold yellow]Charging profile\nClient ID: {clientID}\nPayment Profile ID: {paymentProfileID}\nAmount: ${amount}[/bold yellow]",
@@ -194,11 +207,14 @@ def chargeProfile(request) -> JsonResponse:
             )
         )
         client = Client.objects.get(clientID=clientID)
-        paymentProfile = PaymentProfile.objects.get(paymentProfileID=str(paymentProfileID))
+        paymentProfile = PaymentProfile.objects.get(
+            paymentProfileID=str(paymentProfileID)
+        )
         txResult = AuthNetInterface.chargeProfilePayment(
             paymentProfile=paymentProfile,
             client=client,
             amount=amount,
+            entityKey=entityKey,
         )
         if "error" not in txResult or not txResult["error"]:
             print(
@@ -233,6 +249,7 @@ def chargeProfile(request) -> JsonResponse:
         return JsonResponse(
             {"error": f"An unexpected error occurred: {str(e)}"}, status=500
         )
+
 
 @csrf_exempt
 def addNote(request) -> JsonResponse:
@@ -278,13 +295,104 @@ def addNote(request) -> JsonResponse:
             return JsonResponse({"error": clientNote["error"]}, status=500)
         else:
             return JsonResponse(
-                {"success": True, "clientNote": str(clientNote.note)}, status=200
+                {
+                    "success": True,
+                    "noteID": clientNote.pk,
+                    "clientNote": str(clientNote.note),
+                },
+                status=200,
             )
     except Exception as e:
         print(
             Panel(
                 f"[bold red]Unexpected error in addNote: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
                 title="❌[ERROR] |addNote| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
+
+
+@csrf_exempt
+def editNote(request) -> JsonResponse:
+    """Edit a note"""
+    if request.method != "POST":
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
+                title="❌[ERROR] |editNote| Method Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        payload = json.loads(request.body)
+        noteID = payload.get("noteID")
+        note = payload.get("note")
+        if not noteID or not note:
+            print(
+                Panel(
+                    "[bold red]Missing fields in request[/bold red]",
+                    title="❌[ERROR] |editNote| Validation Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": "Missing fields"}, status=400)
+        clientNote: ClientNote = ClientNote.objects.get(pk=noteID)
+        clientNote.note = note
+        clientNote.save()
+        return JsonResponse(
+            {"success": True, "noteID": noteID, "clientNote": str(clientNote.note)},
+            status=200,
+        )
+    except Exception as e:
+        print(
+            Panel(
+                f"[bold red]Unexpected error in editNote: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |editNote| System Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse(
+            {"error": f"An unexpected error occurred: {str(e)}"}, status=500
+        )
+
+
+@csrf_exempt
+def deleteNote(request) -> JsonResponse:
+    """Delete a note"""
+    if request.method != "POST":
+        print(
+            Panel(
+                f"[bold red]Received invalid {request.method} request instead of POST[/bold red]",
+                title="❌[ERROR] |deleteNote| Method Error",
+                border_style="bright_red",
+            )
+        )
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    try:
+        payload = json.loads(request.body)
+        noteID = payload.get("noteID")
+        if not noteID:
+            print(
+                Panel(
+                    "[bold red]Missing noteID in request[/bold red]",
+                    title="❌[ERROR] |deleteNote| Validation Error",
+                    border_style="bright_red",
+                )
+            )
+            return JsonResponse({"error": "Missing noteID"}, status=400)
+        clientNote: ClientNote = ClientNote.objects.get(pk=noteID)
+        clientNote.delete()
+        return JsonResponse({"success": True}, status=200)
+    except Exception as e:
+        print(
+            Panel(
+                f"[bold red]Unexpected error in deleteNote: {str(e)}\nTraceback: {traceback.format_exc()}[/bold red]",
+                title="❌[ERROR] |deleteNote| System Error",
                 border_style="bright_red",
             )
         )
@@ -508,7 +616,11 @@ def createClientProfile(request) -> JsonResponse:
                 status=500,
             )
 
-        if not client.customerProfileID:
+        if (
+            not client.wcCustomerProfileID
+            or not client.vbcCustomerProfileID
+            or not client.cgCustomerProfileID
+        ):
             print(
                 Panel(
                     "[bold red]Profile created but no clientID received[/bold red]",
@@ -525,6 +637,7 @@ def createClientProfile(request) -> JsonResponse:
 
         cardDetails = payload.get("cardDetails", None)
         billingDetails = payload.get("billingDetails", None)
+        entityKey = payload.get("entityKey", None)
         # Add payment method if provided
         if cardDetails is None:
             print(
@@ -538,11 +651,17 @@ def createClientProfile(request) -> JsonResponse:
                 data={
                     "success": True,
                     "clientId": str(client.clientID),
-                    "customerProfileID": str(client.customerProfileID),
+                    "wcCustomerProfileID": str(client.wcCustomerProfileID),
+                    "vbcCustomerProfileID": str(client.vbcCustomerProfileID),
+                    "cgCustomerProfileID": str(client.cgCustomerProfileID),
                 },
                 status=200,
             )
-        if cardDetails is not None and billingDetails is not None:
+        if (
+            cardDetails is not None
+            and billingDetails is not None
+            and entityKey is not None
+        ):
             print(
                 Panel(
                     f"[bold bright_blue]Adding payment method for profile {client.clientID}[/bold bright_blue]",
@@ -553,7 +672,10 @@ def createClientProfile(request) -> JsonResponse:
             cardDetails = CardDetails(**cardDetails)
             billingDetails = CardBillingDetails(**billingDetails)
             payment = PaymentProfile.addPaymentMethod(
-                client=client, cardDetails=cardDetails, billingDetails=billingDetails
+                client=client,
+                cardDetails=cardDetails,
+                billingDetails=billingDetails,
+                entityKey=entityKey,
             )
             if isinstance(payment, PaymentProfile) and payment.status == "Active":
                 print(
@@ -567,7 +689,9 @@ def createClientProfile(request) -> JsonResponse:
                     {
                         "success": True,
                         "clientId": str(client.clientID),
-                        "customerProfileID": str(client.customerProfileID),
+                        "wcCustomerProfileID": str(client.wcCustomerProfileID),
+                        "vbcCustomerProfileID": str(client.vbcCustomerProfileID),
+                        "cgCustomerProfileID": str(client.cgCustomerProfileID),
                         "paymentMethodStatus": str(payment.status),
                     },
                     status=200,
@@ -584,7 +708,9 @@ def createClientProfile(request) -> JsonResponse:
                     {
                         "success": False,
                         "clientId": str(client.clientID),
-                        "customerProfileID": str(client.customerProfileID),
+                        "wcCustomerProfileID": str(client.wcCustomerProfileID),
+                        "vbcCustomerProfileID": str(client.vbcCustomerProfileID),
+                        "cgCustomerProfileID": str(client.cgCustomerProfileID),
                         "paymentMethodStatus": str(payment["error"]),  # type: ignore
                     },
                     status=500,
@@ -726,11 +852,33 @@ def addPaymentMethod(request) -> JsonResponse:
         cardDetails = CardDetails(**cardDetails)
         billingDetails = CardBillingDetails(**billingDetails)
 
-        payment = PaymentProfile.addPaymentMethod(
-            client=client, cardDetails=cardDetails, billingDetails=billingDetails
+        wcPayment = PaymentProfile.addPaymentMethod(
+            client=client,
+            cardDetails=cardDetails,
+            billingDetails=billingDetails,
+            entityKey="wc",
+        )
+        vbcPayment = PaymentProfile.addPaymentMethod(
+            client=client,
+            cardDetails=cardDetails,
+            billingDetails=billingDetails,
+            entityKey="vbc",
+        )
+        cgPayment = PaymentProfile.addPaymentMethod(
+            client=client,
+            cardDetails=cardDetails,
+            billingDetails=billingDetails,
+            entityKey="cg",
         )
 
-        if isinstance(payment, PaymentProfile) and payment.status == "Active":
+        if (
+            isinstance(wcPayment, PaymentProfile)
+            and wcPayment.status == "Active"
+            or isinstance(vbcPayment, PaymentProfile)
+            and vbcPayment.status == "Active"
+            or isinstance(cgPayment, PaymentProfile)
+            and cgPayment.status == "Active"
+        ):
             print(
                 Panel(
                     f"[bold green]Successfully added payment method for client {client.clientID}[/bold green]",
@@ -742,16 +890,32 @@ def addPaymentMethod(request) -> JsonResponse:
                 {
                     "success": True,
                     "clientId": str(client.clientID),
-                    "customerProfileID": str(client.customerProfileID),
-                    "paymentMethodStatus": str(payment.status),
+                    "wcCustomerProfileID": str(client.wcCustomerProfileID),
+                    "wcPaymentMethodStatus": str(wcPayment.status),  # type: ignore
+                    "vbcCustomerProfileID": str(client.vbcCustomerProfileID),
+                    "vbcPaymentMethodStatus": str(vbcPayment.status),  # type: ignore
+                    "cgCustomerProfileID": str(client.cgCustomerProfileID),
+                    "cgPaymentMethodStatus": str(cgPayment.status),  # type: ignore
                 },
                 status=200,
             )
         else:
             error_message = (
-                str(payment.get("error", "Unknown error"))
-                if isinstance(payment, dict)
-                else "Unknown error"
+                f"""wcPayment: {
+                    str(wcPayment.get("error", "Unknown error"))
+                    if isinstance(wcPayment, dict)
+                    else "Unknown error"
+                } | """
+                f"""vbcPayment: {
+                    str(vbcPayment.get("error", "Unknown error"))
+                    if isinstance(vbcPayment, dict)
+                    else "Unknown error"
+                } | """
+                f"""cgPayment: {
+                    str(cgPayment.get("error", "Unknown error"))
+                    if isinstance(cgPayment, dict)
+                    else "Unknown error"
+                } | """
             )
             print(
                 Panel(
@@ -764,7 +928,9 @@ def addPaymentMethod(request) -> JsonResponse:
                 {
                     "success": False,
                     "clientId": str(client.clientID),
-                    "customerProfileID": str(client.customerProfileID),
+                    "wcCustomerProfileID": str(client.wcCustomerProfileID),
+                    "vbcCustomerProfileID": str(client.vbcCustomerProfileID),
+                    "cgCustomerProfileID": str(client.cgCustomerProfileID),
                     "paymentMethodStatus": error_message,
                 },
                 status=500,

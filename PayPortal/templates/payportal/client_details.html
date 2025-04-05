@@ -559,13 +559,9 @@ Client Details
         </div>
       </div>
       <div class="modal-footer">
-        {% comment %} TODO: Add print and email functionality {% endcomment %}
-        {% comment %} <button id="print-receipt" class="btn btn-primary">
-          <i class="fa-solid fa-print"></i> Print Receipt
+        <button id="download-receipt" class="btn btn-primary">
+          <i class="fa-solid fa-download"></i> Download Receipt
         </button>
-        <button id="email-receipt" class="btn btn-outline">
-          <i class="fa-solid fa-envelope"></i> Email Receipt
-        </button> {% endcomment %}
       </div>
     </div>
   </div>
@@ -601,7 +597,10 @@ Client Details
     </div>
   </div>
 
+  
   {% block extra_scripts %}
+  <!-- Add jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="{% static 'payportal/js/client_details.js' %}"></script>
   {%endblock%}
 {% endblock %} 

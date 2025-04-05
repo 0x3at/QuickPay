@@ -165,12 +165,10 @@ function hydratePaymentMethods(paymentProfiles) {
 
 // Hydrate transactions tab
 function hydrateTransactions(transactions) {
-    const transactionsTableBody = document.querySelector(
-        "#transactions .data-table tbody"
-    );
+    const transactionsTableBody = document.querySelector("#transactions .data-table tbody");
     transactionsTableBody.innerHTML = "";
     transactions.reverse();
-    console.log(transactions);
+
     transactions.forEach((transaction) => {
         const date = new Date(transaction.created_at);
         const formattedDate = date.toLocaleDateString("en-US", {
@@ -187,26 +185,27 @@ function hydrateTransactions(transactions) {
                 <td>${formattedDate}</td>
                 <td>$${parseFloat(transaction.amount).toFixed(2)}</td>
                 <td>
-                    <span class="status-badge ${transaction.result === "Success" ? "success" : "error"
-            }">${transaction.result}</span>
+                    <span class="status-badge ${transaction.result === "Success" ? "success" : "error"}">${transaction.result}</span>
                 </td>
                 <td>Card ending in ${transaction.accountNumber.slice(-4)}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="action-btn" title="View Receipt" data-transaction-id="${transaction.transId}">
+                        <button class="action-btn receipt-view-btn" data-transaction='${JSON.stringify(transaction)}' title="View Receipt">
                             <i class="fa-solid fa-receipt"></i>
                         </button>
                     </div>
                 </td>
             </tr>`;
 
-        // TODO: Add refund functionality
-        // ${transaction.result === 'Success' ? `
-        // <button class="action-btn" title="Refund" data-transaction-id="${transaction.transId}">
-        //     <i class="fa-solid fa-rotate-left"></i>
-        // </button>` : ''}
-
         transactionsTableBody.innerHTML += transactionHTML;
+    });
+
+    // Add click handlers after adding the buttons to DOM
+    document.querySelectorAll('.receipt-view-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const transaction = JSON.parse(this.getAttribute('data-transaction'));
+            showReceiptDetails(transaction);
+        });
     });
 }
 
@@ -307,8 +306,7 @@ function hydrateNotes(notes) {
                         <button class="btn btn-text btn-danger">Delete</button>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
 
         notesTimeline.innerHTML += noteItemHTML;
     });
@@ -387,7 +385,7 @@ function getTimeAgo(date) {
 }
 
 // Show toast notification - simplified version
-function showToast(message, duration = 3000) {
+function showToast(message, duration = 5000) {
     console.log("Showing toast with message:", message);
 
     const toast = document.getElementById('toast-notification');
@@ -452,7 +450,7 @@ function showErrorMessage(message) {
             toastContent.classList.add('success');
             toastContent.querySelector('i').className = 'fa-solid fa-check-circle';
         }, 300);
-    }, 4000);
+    }, 5000);
 }
 
 // Show error in a form
@@ -489,7 +487,7 @@ function setupTabSwitching() {
 // Setup event listeners for the payment method modal - with enhanced debugging
 function setupPaymentMethodModal() {
     console.log("Setting up payment method modal...");
-    
+
     // Try multiple selectors to find the button
     let addPaymentBtn = document.querySelector('#payment-methods .card-header .btn');
     if (!addPaymentBtn) {
@@ -508,20 +506,20 @@ function setupPaymentMethodModal() {
             }
         }
     }
-    
+
     console.log("Add Payment Method button found:", !!addPaymentBtn);
-    
+
     // Add a direct click handler to all buttons in payment methods tab as a fallback
     document.querySelectorAll('#payment-methods button').forEach(btn => {
         console.log("Found a button in payment methods tab:", btn.textContent.trim());
     });
-    
+
     const modal = document.getElementById('add-payment-modal');
     if (!modal) {
         console.error("Payment modal element not found!");
         return;
     }
-    
+
     const closeBtn = document.getElementById('close-payment-modal');
     const cancelBtn = document.getElementById('cancel-payment');
     const submitBtn = document.getElementById('submit-payment');
@@ -839,20 +837,14 @@ function setupReceiptModal() {
         }
     });
 
-    // Setup print functionality
-    const printButton = document.getElementById('print-receipt');
-    if (printButton) {
-        printButton.addEventListener('click', () => {
-            window.print();
-        });
-    }
-
-    // Setup email functionality
-    const emailButton = document.getElementById('email-receipt');
-    if (emailButton) {
-        emailButton.addEventListener('click', () => {
-            showToast("Email functionality coming soon!");
-        });
+    // Setup download functionality
+    const downloadButton = document.getElementById('download-receipt');
+    if (downloadButton) {
+        downloadButton.onclick = (e) => {
+            e.preventDefault(); // Prevent any default behavior
+            generatePDF(transactionResult);
+            showToast("Receipt downloaded successfully");
+        };
     }
 }
 
@@ -956,7 +948,7 @@ async function handleQuickPayment(event) {
 
         const data = await response.json();
         console.log("Payment response:", data);
-        
+
         // Reset button state
         if (submitButton) {
             submitButton.innerHTML = '<i class="fa-solid fa-bolt"></i> Process Payment';
@@ -967,7 +959,7 @@ async function handleQuickPayment(event) {
         if (data.success && data.transactionResult && data.transactionResult.result === "Success") {
             // Show success message
             showToast("Payment processed successfully!");
-            
+
             try {
                 // Show receipt with transaction details
                 showReceiptDetails(data.transactionResult);
@@ -976,10 +968,10 @@ async function handleQuickPayment(event) {
                 // Even if receipt fails, the payment succeeded
                 showToast("Payment successful! Receipt unavailable.");
             }
-            
+
             // Reset form
             event.target.reset();
-            
+
             // Refresh transaction data
             setTimeout(async () => {
                 try {
@@ -993,21 +985,21 @@ async function handleQuickPayment(event) {
             }, 1000);
         } else {
             // Show error message
-            const errorMessage = data.transactionResult?.errorText || 
-                                data.transactionResult?.error || 
-                                data.error || 
-                                "Payment processing failed. Please try again.";
+            const errorMessage = data.transactionResult?.errorText ||
+                data.transactionResult?.error ||
+                data.error ||
+                "Payment processing failed. Please try again.";
             showErrorMessage(errorMessage);
         }
     } catch (error) {
         console.error("Error processing payment:", error);
-        
+
         // Reset button state
         if (submitButton) {
             submitButton.innerHTML = '<i class="fa-solid fa-bolt"></i> Process Payment';
             submitButton.disabled = false;
         }
-        
+
         // Show error message
         showErrorMessage("Network error. Please check your connection and try again.");
     }
@@ -1148,17 +1140,34 @@ window.debugShowError = function (message = "Test error message") {
 
 // Function to display transaction receipt - with error handling
 function showReceiptDetails(transactionResult) {
-    console.log("Showing receipt for transaction:", transactionResult);
-    
     try {
         const modal = document.getElementById('charge-receipt-modal');
         if (!modal) {
             console.error("Receipt modal not found");
-            showToast("Payment successful! Receipt unavailable.");
+            showToast("Receipt unavailable");
             return;
         }
-        
-        // Safely set text content with error handling
+
+        // Update status icon and heading based on transaction result
+        const statusSection = modal.querySelector('.receipt-status');
+        const statusHeading = modal.querySelector('.receipt-status h3');
+        const statusIcon = modal.querySelector('.receipt-status .receipt-icon i');
+
+        if (statusHeading && statusIcon) {
+            if (transactionResult.result === 'Success') {
+                statusHeading.textContent = 'Payment Successful';
+                statusIcon.className = 'fa-solid fa-circle-check';
+                statusIcon.style.color = 'var(--success)'; // Use success color
+                statusSection.style.color = 'var(--success)';
+            } else {
+                statusHeading.textContent = 'Payment Failed';
+                statusIcon.className = 'fa-solid fa-circle-xmark';
+                statusIcon.style.color = 'var(--error)'; // Use error color
+                statusSection.style.color = 'var(--error)';
+            }
+        }
+
+        // Rest of the existing code...
         const safeSetText = (id, value) => {
             const element = document.getElementById(id);
             if (element) {
@@ -1167,33 +1176,21 @@ function showReceiptDetails(transactionResult) {
                 console.warn(`Element with id '${id}' not found in receipt modal`);
             }
         };
-        
-        // Set transaction details in the receipt
-        const statusHeading = modal.querySelector('.receipt-status h3');
-        if (statusHeading) {
-            statusHeading.textContent = 'Payment Successful';
-        }
-        
+
         // Client information
         safeSetText('receipt-client', clientData.clientDetails.companyName);
         safeSetText('receipt-clientId', clientData.clientDetails.clientID);
-        
+
         // Transaction details
         safeSetText('receipt-transId', transactionResult.transId || "N/A");
         safeSetText('receipt-amount', '$' + parseFloat(transactionResult.amount).toFixed(2));
-        
-        // Format date
-        const transDate = transactionResult.created_at ? new Date(transactionResult.created_at) : new Date();
-        safeSetText('receipt-date', transDate.toLocaleString());
-        
+        safeSetText('receipt-date', new Date(transactionResult.created_at).toLocaleString());
         safeSetText('receipt-card', `${transactionResult.accountType || "Card"} ending in ${(transactionResult.accountNumber || "").slice(-4)}`);
-        safeSetText('receipt-description', transactionResult.invoiceID || 'Standard charge');
-        safeSetText('receipt-salesperson', transactionResult.salesperson || clientData.clientDetails.salesperson || "N/A");
-        safeSetText('receipt-status', transactionResult.result || "Success");
-        
+        safeSetText('receipt-status', transactionResult.result || "N/A");
+
         // Show the modal
         modal.classList.add('show');
-        
+
         // Setup close functionality
         const closeButtons = modal.querySelectorAll('.close-modal');
         closeButtons.forEach(button => {
@@ -1201,47 +1198,199 @@ function showReceiptDetails(transactionResult) {
                 modal.classList.remove('show');
             });
         });
-        
-        // Close when clicking outside the modal
+
+        // Close when clicking outside
         window.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.classList.remove('show');
             }
         });
-        
-        // Setup print functionality
-        const printButton = document.getElementById('print-receipt');
-        if (printButton) {
-            printButton.addEventListener('click', () => {
-                window.print();
-            });
+
+        // Setup download functionality
+        const downloadButton = document.getElementById('download-receipt');
+        if (downloadButton) {
+            downloadButton.onclick = (e) => {
+                e.preventDefault(); // Prevent any default behavior
+                generatePDF(transactionResult);
+                showToast("Receipt downloaded successfully");
+            };
         }
-        
-        // Make sure transactions get updated after a successful payment
-        setTimeout(async () => {
-            try {
-                clientData = await fetchClientData();
-                if (clientData) {
-                    hydrateTransactions(clientData.transactions);
-                }
-            } catch (err) {
-                console.error("Error refreshing transaction data:", err);
-            }
-        }, 1000);
-        
+
     } catch (error) {
         console.error("Error displaying receipt:", error);
-        showToast("Payment processed successfully! Receipt unavailable.");
+        showToast("Error displaying receipt");
     }
 }
 
 // Add this debugging helper to the global scope
-window.debugShowModal = function() {
+window.debugShowModal = function () {
     const modal = document.getElementById('add-payment-modal');
     if (modal) {
         console.log("Manually showing payment modal");
         modal.classList.add('show');
     } else {
         console.error("Modal not found for manual display");
+    }
+};
+
+// Add new function to show transaction receipt
+function showTransactionReceipt(transaction) {
+    console.log("Showing receipt for transaction:", transaction);
+
+    try {
+        const modal = document.getElementById('charge-receipt-modal');
+        if (!modal) {
+            console.error("Receipt modal not found");
+            showToast("Receipt unavailable");
+            return;
+        }
+
+        // Set transaction details in the receipt
+        const statusHeading = modal.querySelector('.receipt-status h3');
+        if (statusHeading) {
+            statusHeading.textContent = transaction.result === 'Success' ? 'Payment Successful' : 'Payment Failed';
+        }
+
+        // Client information
+        document.getElementById('receipt-client').textContent = clientData.clientDetails.companyName;
+        document.getElementById('receipt-clientId').textContent = clientData.clientDetails.clientID;
+
+        // Transaction details
+        document.getElementById('receipt-transId').textContent = transaction.transId || "N/A";
+        document.getElementById('receipt-amount').textContent = `$${parseFloat(transaction.amount).toFixed(2)}`;
+
+        // Format date
+        const transDate = transaction.created_at ? new Date(transaction.created_at) : new Date();
+        document.getElementById('receipt-date').textContent = transDate.toLocaleString();
+
+        document.getElementById('receipt-card').textContent = `${transaction.accountType || "Card"} ending in ${transaction.accountNumber.slice(-4)}`;
+        document.getElementById('receipt-status').textContent = transaction.result || "N/A";
+
+        // Show the modal
+        modal.classList.add('show');
+
+        // Setup print functionality
+        const printButton = document.getElementById('print-receipt');
+        if (printButton) {
+            printButton.onclick = () => generatePDF(transaction);
+        }
+    } catch (error) {
+        console.error("Error displaying receipt:", error);
+        showToast("Error displaying receipt");
+    }
+}
+
+// Add PDF generation function
+function generatePDF(transaction) {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jspdf.jsPDF();
+
+        // Document settings
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 24;
+        const contentWidth = pageWidth - margin * 2;
+
+        // Colors
+        const primaryColor = [44, 62, 80];
+        const secondaryColor = [52, 73, 94];
+        const accentColor = [41, 128, 185];
+        const lightGray = [245, 246, 250];
+
+        // Helper function to ensure string values
+        const formatValue = (value) => {
+            if (value === null || value === undefined) return "N/A";
+            return String(value);
+        };
+
+        // Add receipt header
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(...primaryColor);
+        doc.text("Payment Receipt", pageWidth / 2, 30, { align: "center" });
+
+        // Add horizontal line
+        doc.setDrawColor(...accentColor);
+        doc.setLineWidth(0.5);
+        doc.line(margin, 35, pageWidth - margin, 35);
+
+        // Add receipt details
+        doc.setFontSize(11);
+        doc.setTextColor(...secondaryColor);
+
+        // Prepare receipt data with proper string formatting
+        const receiptData = [
+            ["Invoice ID:", formatValue(transaction.invoiceID)],
+            ["Reference ID:", formatValue(transaction.refID)],
+            ["Transaction ID:", formatValue(transaction.transId)],
+            ["Date:", formatValue(new Date(transaction.created_at).toLocaleString())],
+            ["Amount:", formatValue(`$${parseFloat(transaction.amount).toFixed(2)}`)],
+            ["Status:", formatValue(transaction.result)],
+            ["Auth Code:", formatValue(transaction.authCode)],
+            ["Card Type:", formatValue(transaction.accountType)],
+            ["Card Number:", formatValue(`****${transaction.accountNumber.slice(-4)}`)],
+            ["Client:", formatValue(clientData.clientDetails.companyName)],
+            ["Client ID:", formatValue(clientData.clientDetails.clientID)],
+            ["Salesperson:", formatValue(clientData.clientDetails.salesperson)]
+        ];
+
+        // Add data rows with improved styling
+        let yPos = 45;
+
+        // Add rounded rectangle background for the entire table
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(220, 220, 220);
+        doc.roundedRect(
+            margin - 5,
+            yPos - 5,
+            contentWidth + 10,
+            receiptData.length * 12 + 10,
+            3,
+            3,
+            "FD"
+        );
+
+        receiptData.forEach((row, index) => {
+            // Add subtle background for even rows
+            if (index % 2 === 0) {
+                doc.setFillColor(...lightGray);
+                doc.rect(margin, yPos - 4, contentWidth, 10, "F");
+            }
+
+            // Add label (bold)
+            doc.setFont("helvetica", "bold");
+            doc.text(formatValue(row[0]), margin + 5, yPos);
+
+            // Add value (normal)
+            doc.setFont("helvetica", "normal");
+            doc.text(formatValue(row[1]), margin + 50, yPos);
+
+            yPos += 12;
+        });
+
+        // Add footer with timestamp
+        const footerY = yPos + 15;
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.setFont("helvetica", "italic");
+        doc.text(
+            `Receipt Generated on ${new Date().toLocaleString()}`,
+            pageWidth / 2,
+            footerY,
+            { align: "center" }
+        );
+
+        // Generate timestamp for filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const filename = `receipt_${formatValue(transaction.transId)}_${timestamp}.pdf`;
+
+        // Download PDF
+        doc.save(filename);
+        showToast("Receipt downloaded successfully");
+
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        console.error("Transaction data:", transaction);
+        showToast("Error generating PDF receipt");
     }
 }
